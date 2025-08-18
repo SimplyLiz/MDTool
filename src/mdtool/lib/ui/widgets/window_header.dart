@@ -15,6 +15,7 @@ class WindowHeader extends ConsumerWidget {
   final VoidCallback? onOpenFile;
   final VoidCallback? onChat;
   final VoidCallback? onNewFile;
+  final VoidCallback? onSave;
   final ActiveWindow activeWindowType;
   final VoidCallback? onTap;
 
@@ -27,6 +28,7 @@ class WindowHeader extends ConsumerWidget {
     this.onOpenFile,
     this.onChat,
     this.onNewFile,
+    this.onSave,
     this.onTap,
   });
 
@@ -106,6 +108,22 @@ class WindowHeader extends ConsumerWidget {
                   ),
                   tooltip: 'New file',
                 ),
+              // Show Save button when file is loaded
+              if (filePath != null && onSave != null)
+                IconButton(
+                  iconSize: 16,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: const EdgeInsets.all(4),
+                  onPressed: _shouldEnableSave(appState) ? onSave : null,
+                  icon: Icon(
+                    Icons.save,
+                    size: 16,
+                    color: _shouldEnableSave(appState) 
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                  ),
+                  tooltip: _shouldEnableSave(appState) ? 'Save file' : 'No changes to save',
+                ),
               if (onChat != null)
                 IconButton(
                   iconSize: 16,
@@ -168,6 +186,19 @@ class WindowHeader extends ConsumerWidget {
         return Icons.edit_outlined;
       case WindowType.preview:
         return Icons.preview_outlined;
+    }
+  }
+
+  bool _shouldEnableSave(AppState appState) {
+    // Determine which window we're dealing with and check its dirty state
+    switch (activeWindowType) {
+      case ActiveWindow.primary:
+        return appState.isDirty && appState.currentFile != null;
+      case ActiveWindow.secondary:
+        return appState.isSecondaryDirty && appState.secondaryFile != null;
+      case ActiveWindow.preview:
+        // Preview window can save the primary file if it has changes
+        return appState.isDirty && appState.currentFile != null;
     }
   }
 }

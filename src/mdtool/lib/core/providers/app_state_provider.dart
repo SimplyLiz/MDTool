@@ -44,11 +44,13 @@ class AppStateNotifier extends StateNotifier<AppState> {
     final preferencesAsync = _ref.read(preferencesProvider);
     final defaultEditMode = preferencesAsync.value?.defaultEditMode ?? false;
     
+    
     switch (state.activeWindow) {
       case ActiveWindow.primary:
         _safeSetState(state.copyWith(
           currentFile: filePath,
           content: content,
+          originalContent: content, // Store original content
           isDirty: false,
           isFolderSidebarVisible: true,  // Automatically show sidebar when file is opened
           isEditMode: defaultEditMode,  // Respect user's default edit mode preference
@@ -59,6 +61,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
           _safeSetState(state.copyWith(
             secondaryFile: filePath,
             secondaryContent: content,
+            originalSecondaryContent: content, // Store original secondary content
             isSecondaryDirty: false,
           ));
         } else {
@@ -66,6 +69,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
           _safeSetState(state.copyWith(
             currentFile: filePath,
             content: content,
+            originalContent: content, // Store original content
             isDirty: false,
             isFolderSidebarVisible: true,
             isEditMode: defaultEditMode,
@@ -77,6 +81,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
         _safeSetState(state.copyWith(
           currentFile: filePath,
           content: content,
+          originalContent: content, // Store original content
           isDirty: false,
           isFolderSidebarVisible: true,
           isEditMode: defaultEditMode,
@@ -90,9 +95,11 @@ class AppStateNotifier extends StateNotifier<AppState> {
   }
 
   void updateContent(String content) {
+    // Compare with original content to determine if file is actually dirty
+    final isDirty = content != state.originalContent;
     _safeSetState(state.copyWith(
       content: content,
-      isDirty: true,
+      isDirty: isDirty,
     ));
   }
 
@@ -108,6 +115,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
 
   void saveFile() {
     _safeSetState(state.copyWith(
+      originalContent: state.content, // Update original content to current content
       isDirty: false,
     ));
   }
@@ -127,6 +135,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
     _safeSetState(state.copyWith(
       secondaryFile: filePath,
       secondaryContent: content,
+      originalSecondaryContent: content, // Store original secondary content
       isSplitScreenMode: true,
       isSecondaryDirty: false,
       activeWindow: ActiveWindow.secondary,  // Set secondary window as active when opened
@@ -134,9 +143,11 @@ class AppStateNotifier extends StateNotifier<AppState> {
   }
 
   void updateSecondaryContent(String content) {
+    // Compare with original secondary content to determine if file is actually dirty
+    final isSecondaryDirty = content != state.originalSecondaryContent;
     _safeSetState(state.copyWith(
       secondaryContent: content,
-      isSecondaryDirty: true,
+      isSecondaryDirty: isSecondaryDirty,
     ));
   }
 
@@ -151,6 +162,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
 
   void saveSecondaryFile() {
     _safeSetState(state.copyWith(
+      originalSecondaryContent: state.secondaryContent, // Update original secondary content to current content
       isSecondaryDirty: false,
     ));
   }

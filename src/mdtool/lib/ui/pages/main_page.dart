@@ -142,6 +142,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                                             onChat: appState.currentFile != null 
                                                 ? () => WindowHeaderActions.openChatWithFile(context, appState.currentFile)
                                                 : null,
+                                            onSave: () => _saveFile(ref),
                                             onClose: appState.currentFile != null
                                                 ? () => ref.read(appStateProvider.notifier).closeFile()
                                                 : null,
@@ -863,6 +864,52 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         ],
       ),
     );
+  }
+
+  void _saveFile(WidgetRef ref) async {
+    final appState = ref.read(appStateProvider);
+    if (appState.currentFile == null) return;
+
+    try {
+      final fileService = FileService();
+      await fileService.writeFile(appState.currentFile!, appState.content);
+      ref.read(appStateProvider.notifier).saveFile();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File saved successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save file: $e')),
+        );
+      }
+    }
+  }
+
+  void _saveSecondaryFile(WidgetRef ref) async {
+    final appState = ref.read(appStateProvider);
+    if (appState.secondaryFile == null) return;
+
+    try {
+      final fileService = FileService();
+      await fileService.writeFile(appState.secondaryFile!, appState.secondaryContent);
+      ref.read(appStateProvider.notifier).saveSecondaryFile();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Secondary file saved successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save secondary file: $e')),
+        );
+      }
+    }
   }
 
   /// Open a recent item (file or folder)

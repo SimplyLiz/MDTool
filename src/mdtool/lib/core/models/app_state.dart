@@ -5,11 +5,13 @@ enum ActiveWindow { primary, preview, secondary }
 class AppState extends Equatable {
   final String? currentFile;
   final String content;
+  final String originalContent; // Track original file content
   final bool isEditMode;
   final bool isDirty;
   final bool isSplitScreenMode;
   final String? secondaryFile;
   final String secondaryContent;
+  final String originalSecondaryContent; // Track original secondary file content
   final bool isSecondaryDirty;
   final bool isFolderSidebarVisible;
   final bool isPreviewVisible;
@@ -25,11 +27,13 @@ class AppState extends Equatable {
   const AppState({
     this.currentFile,
     this.content = '',
+    this.originalContent = '',
     this.isEditMode = false,
     this.isDirty = false,
     this.isSplitScreenMode = false,
     this.secondaryFile,
     this.secondaryContent = '',
+    this.originalSecondaryContent = '',
     this.isSecondaryDirty = false,
     this.isFolderSidebarVisible = false,
     this.isPreviewVisible = false,
@@ -46,11 +50,13 @@ class AppState extends Equatable {
   AppState copyWith({
     String? currentFile,
     String? content,
+    String? originalContent,
     bool? isEditMode,
     bool? isDirty,
     bool? isSplitScreenMode,
     String? secondaryFile,
     String? secondaryContent,
+    String? originalSecondaryContent,
     bool? isSecondaryDirty,
     bool? isFolderSidebarVisible,
     bool? isPreviewVisible,
@@ -66,11 +72,13 @@ class AppState extends Equatable {
     return AppState(
       currentFile: currentFile ?? this.currentFile,
       content: content ?? this.content,
+      originalContent: originalContent ?? this.originalContent,
       isEditMode: isEditMode ?? this.isEditMode,
       isDirty: isDirty ?? this.isDirty,
       isSplitScreenMode: isSplitScreenMode ?? this.isSplitScreenMode,
       secondaryFile: secondaryFile ?? this.secondaryFile,
       secondaryContent: secondaryContent ?? this.secondaryContent,
+      originalSecondaryContent: originalSecondaryContent ?? this.originalSecondaryContent,
       isSecondaryDirty: isSecondaryDirty ?? this.isSecondaryDirty,
       isFolderSidebarVisible: isFolderSidebarVisible ?? this.isFolderSidebarVisible,
       isPreviewVisible: isPreviewVisible ?? this.isPreviewVisible,
@@ -89,11 +97,13 @@ class AppState extends Equatable {
   List<Object?> get props => [
         currentFile,
         content,
+        originalContent,
         isEditMode,
         isDirty,
         isSplitScreenMode,
         secondaryFile,
         secondaryContent,
+        originalSecondaryContent,
         isSecondaryDirty,
         isFolderSidebarVisible,
         isPreviewVisible,

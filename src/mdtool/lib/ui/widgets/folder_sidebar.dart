@@ -121,7 +121,9 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
       }
       
       // Handle dropped folders
-      if (previous?.droppedFolder != current.droppedFolder && current.droppedFolder != null) {
+      if (previous?.droppedFolder != current.droppedFolder && 
+          current.droppedFolder != null && 
+          current.droppedFolder!.isNotEmpty) {
         _handleDroppedFolder(current.droppedFolder!);
       }
     });
@@ -838,11 +840,9 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
     // Scan the dropped folder
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scanForMarkdownFiles(directoryPath: folderPath);
-    });
-    
-    // Clear the dropped folder state to prevent repeated handling
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(appStateProvider.notifier).setDroppedFolder(''); // Clear with empty string
+      
+      // Clear the dropped folder state after scanning is initiated
+      ref.read(appStateProvider.notifier).clearDroppedFolder();
     });
   }
   

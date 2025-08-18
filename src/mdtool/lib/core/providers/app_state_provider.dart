@@ -216,6 +216,13 @@ class AppStateNotifier extends StateNotifier<AppState> {
     ));
   }
 
+  void clearDroppedFolder() {
+    // Clear the dropped folder state by setting it to null
+    _safeSetState(state.copyWith(
+      clearDroppedFolder: true,
+    ));
+  }
+
   void togglePreviewVisibility() {
     _safeSetState(state.copyWith(
       isPreviewVisible: !state.isPreviewVisible,

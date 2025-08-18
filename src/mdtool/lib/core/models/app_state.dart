@@ -68,6 +68,7 @@ class AppState extends Equatable {
     String? droppedFolder,
     String? currentFolderRoot,
     ActiveWindow? activeWindow,
+    bool clearDroppedFolder = false,
   }) {
     return AppState(
       currentFile: currentFile ?? this.currentFile,
@@ -87,7 +88,7 @@ class AppState extends Equatable {
       scrollToHeading: scrollToHeading ?? this.scrollToHeading,
       scrollRequestId: scrollRequestId ?? this.scrollRequestId,
       folderPickerRequestId: folderPickerRequestId ?? this.folderPickerRequestId,
-      droppedFolder: droppedFolder ?? this.droppedFolder,
+      droppedFolder: clearDroppedFolder ? null : (droppedFolder ?? this.droppedFolder),
       currentFolderRoot: currentFolderRoot ?? this.currentFolderRoot,
       activeWindow: activeWindow ?? this.activeWindow,
     );

@@ -67,18 +67,18 @@ class WindowLayout extends ConsumerWidget {
         // Left pane
         Expanded(
           flex: (config.splitRatio! * 100).round(),
-          child: _buildPaneAtIndex(0, showBorder: true),
+          child: _buildPaneAtIndex(0, padding: const EdgeInsets.only(right: 4)),
         ),
         // Right pane
         Expanded(
           flex: ((1 - config.splitRatio!) * 100).round(),
-          child: _buildPaneAtIndex(1, padding: const EdgeInsets.only(left: 8)),
+          child: _buildPaneAtIndex(1, padding: const EdgeInsets.only(left: 4)),
         ),
       ],
     );
   }
 
-  Widget _buildPaneAtIndex(int index, {bool showBorder = false, EdgeInsets? padding}) {
+  Widget _buildPaneAtIndex(int index, {EdgeInsets? padding}) {
     if (index >= config.panes.length) {
       return const SizedBox.shrink();
     }
@@ -88,7 +88,6 @@ class WindowLayout extends ConsumerWidget {
     
     return WindowPane(
       config: paneConfig,
-      showBorder: showBorder,
       padding: padding,
       child: widget,
     );

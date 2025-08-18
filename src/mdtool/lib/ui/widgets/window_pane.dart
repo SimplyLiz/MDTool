@@ -42,14 +42,12 @@ class WindowPaneConfig {
 class WindowPane extends ConsumerWidget {
   final WindowPaneConfig config;
   final Widget child;
-  final bool showBorder;
   final EdgeInsets? padding;
 
   const WindowPane({
     super.key,
     required this.config,
     required this.child,
-    this.showBorder = false,
     this.padding,
   });
 
@@ -57,38 +55,42 @@ class WindowPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: padding,
-      decoration: showBorder
-          ? BoxDecoration(
-              border: Border(
-                right: BorderSide(
-                  color: Theme.of(context).dividerColor,
-                  width: 1,
-                ),
-              ),
-            )
-          : null,
-      child: Column(
-        children: [
-          WindowHeader(
-            windowType: _getWindowType(),
-            activeWindowType: config.activeWindow,
-            filePath: config.filePath,
-            onOpenFile: config.onOpenFile,
-            onNewFile: config.onNewFile,
-            onChat: config.onChat,
-            onSave: config.onSave,
-            onClose: config.onClose,
-            onTap: config.onTap,
-          ),
-          Expanded(
-            child: GestureDetector(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).dividerColor,
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(7),
+        child: Column(
+          children: [
+            WindowHeader(
+              windowType: _getWindowType(),
+              activeWindowType: config.activeWindow,
+              filePath: config.filePath,
+              onOpenFile: config.onOpenFile,
+              onNewFile: config.onNewFile,
+              onChat: config.onChat,
+              onSave: config.onSave,
+              onClose: config.onClose,
               onTap: config.onTap,
-              child: config.filePath != null || config.placeholder == null
-                  ? child
-                  : config.placeholder!,
             ),
-          ),
-        ],
+            Container(
+              height: 1,
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: config.onTap,
+                child: config.filePath != null || config.placeholder == null
+                    ? child
+                    : config.placeholder!,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

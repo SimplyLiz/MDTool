@@ -44,19 +44,9 @@ class WindowHeader extends ConsumerWidget {
       child: Container(
         height: 40,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isActive 
-              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-              : Theme.of(context).colorScheme.surfaceContainerHighest,
-          border: Border(
-            bottom: BorderSide(
-              color: isActive 
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                  : Theme.of(context).dividerColor,
-              width: isActive ? 2 : 1,
-            ),
-          ),
-        ),
+        color: isActive 
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Row(
           children: [
             Icon(

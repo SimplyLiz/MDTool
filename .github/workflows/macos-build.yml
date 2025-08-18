@@ -1,0 +1,74 @@
+name: macOS Build
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/mdtool/**'
+      - '.github/workflows/macos-build.yml'
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.32.5'
+        channel: 'stable'
+        cache: true
+    
+    - name: Verify Flutter installation
+      run: |
+        flutter --version
+        flutter doctor -v
+    
+    - name: Install dependencies for local package
+      working-directory: src/packages/th_diff_suite
+      run: flutter pub get
+      
+    - name: Get dependencies
+      working-directory: src/mdtool
+      run: flutter pub get
+    
+    - name: Analyze code
+      working-directory: src/mdtool
+      run: flutter analyze
+    
+    - name: Run tests
+      working-directory: src/mdtool
+      run: flutter test
+    
+    - name: Enable macOS desktop support
+      working-directory: src/mdtool
+      run: flutter config --enable-macos-desktop
+    
+    - name: Clean build
+      working-directory: src/mdtool  
+      run: flutter clean
+    
+    - name: Build macOS app
+      working-directory: src/mdtool
+      run: flutter build macos --release --no-codesign
+    
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: macos-build
+        path: src/mdtool/build/macos/Build/Products/Release/
+        retention-days: 7
+    
+    - name: Build status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ macOS build completed successfully"
+        else
+          echo "❌ macOS build failed"
+          exit 1
+        fi

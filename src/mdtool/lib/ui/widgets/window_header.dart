@@ -108,8 +108,8 @@ class WindowHeader extends ConsumerWidget {
                   ),
                   tooltip: 'New file',
                 ),
-              // Show Save button when file is loaded
-              if (filePath != null && onSave != null)
+              // Show Save button when file is loaded (but not in preview windows)
+              if (filePath != null && onSave != null && windowType != WindowType.preview)
                 IconButton(
                   iconSize: 16,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),

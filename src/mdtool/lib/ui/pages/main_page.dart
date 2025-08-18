@@ -226,8 +226,8 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                 const SizedBox(height: 8),
                 Text(
                   _isDragging 
-                      ? 'Drop your Markdown file here'
-                      : 'Open a Markdown file to get started',
+                      ? 'Drop your Markdown file or folder here'
+                      : 'Open a Markdown file or folder to get started',
                   style: TextStyle(
                     fontSize: 16,
                     color: _isDragging 
@@ -237,24 +237,40 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                 ),
                 if (!_isDragging) ...[
                   const SizedBox(height: 32),
-                  Row(
+                  Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      ElevatedButton(
-                        onPressed: () => _openFileDialog(ref),
-                        child: const Text('Open File'),
+                      SizedBox(
+                        width: 200,
+                        child: ElevatedButton(
+                          onPressed: () => _openFileDialog(ref),
+                          child: const Text('Open File'),
+                        ),
                       ),
-                      const SizedBox(width: 16),
-                      OutlinedButton.icon(
-                        onPressed: () => WindowHeaderActions.openChatWithoutFile(context),
-                        icon: const Icon(Icons.chat, size: 18),
-                        label: const Text('Chat'),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: 200,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _openFolderDialog(ref),
+                          icon: const Icon(Icons.folder_open, size: 18),
+                          label: const Text('Open Folder'),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: 200,
+                        child: OutlinedButton.icon(
+                          onPressed: () => WindowHeaderActions.openChatWithoutFile(context),
+                          icon: const Icon(Icons.chat, size: 18),
+                          label: const Text('Chat'),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'or drag and drop a .md file',
+                    'or drag and drop a .md file or folder',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[500],
@@ -798,6 +814,28 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       }
     } catch (e) {
       _showErrorDialog('Failed to open file: $e');
+    }
+  }
+
+  void _openFolderDialog(WidgetRef ref) async {
+    try {
+      final appStateNotifier = ref.read(appStateProvider.notifier);
+      final appState = ref.read(appStateProvider);
+
+      // If sidebar not visible, show it first
+      if (!appState.isFolderSidebarVisible) {
+        appStateNotifier.toggleFolderSidebar();
+        
+        // Wait a bit for the sidebar to appear before triggering folder picker
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+
+      // Request the sidebar to open its folder picker
+      // This will use the proper DirectoryPermissionsService with security bookmarks
+      appStateNotifier.requestFolderPicker();
+
+    } catch (e) {
+      _showErrorDialog('Failed to open folder: $e');
     }
   }
 

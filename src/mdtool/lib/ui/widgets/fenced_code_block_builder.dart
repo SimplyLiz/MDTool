@@ -18,8 +18,10 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
     
     final classAttr = element.attributes['class'] ?? '';
     if (!classAttr.startsWith('language-')) return null;
-
+    
+    // Safety check for empty or invalid content
     final rawCode = element.textContent;
+    if (rawCode.trim().isEmpty) return null;
 
     // language comes from the "class" attribute: e.g. "language-dart"
     final lang = classAttr.startsWith('language-')

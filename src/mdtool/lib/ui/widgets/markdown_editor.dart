@@ -713,18 +713,7 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
                     },
                   ),
                 },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                      width: 1,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: NotificationListener<ScrollNotification>(
+                child: NotificationListener<ScrollNotification>(
                       onNotification: (n) {
                         final isUpdate = n is ScrollUpdateNotification;
                         final isUser = n is UserScrollNotification && n.direction != ScrollDirection.idle;
@@ -770,16 +759,12 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
                             fontSize: preferences.fontSize,
                             height: 1.5,
                           ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                          ),
+                          decoration: const BoxDecoration(),
                           padding: const EdgeInsets.all(16),
                           expands: true,
                         ),
                       ),
                     ),
-                  ),
-                ),
               ),
             ),
           ),

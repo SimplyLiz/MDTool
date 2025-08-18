@@ -135,6 +135,7 @@ class MermaidRenderer extends GraphRenderer {
   
   String _generateMermaidHTML(String content, String theme, GraphRenderOptions? options) {
     final mermaidConfig = {
+      'startOnLoad': true,
       'theme': theme == 'dark' ? 'dark' : 'default',
       'themeVariables': theme == 'dark' ? {
         'primaryColor': '#bb86fc',
@@ -234,7 +235,6 @@ class MermaidRenderer extends GraphRenderer {
             font-family: monospace;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
 </head>
 <body>
     <div id="mermaid-container">
@@ -243,7 +243,9 @@ class MermaidRenderer extends GraphRenderer {
         </div>
     </div>
     
-    <script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        
         mermaid.initialize(${jsonEncode(mermaidConfig)});
         
         function renderMermaid(content) {
@@ -251,12 +253,8 @@ class MermaidRenderer extends GraphRenderer {
                 const container = document.getElementById('mermaid-graph');
                 container.innerHTML = content;
                 
-                mermaid.run().then(() => {
-                    console.log('Mermaid diagram rendered successfully');
-                }).catch((error) => {
-                    console.error('Mermaid rendering error:', error);
-                    showError('Failed to render diagram: ' + error.message);
-                });
+                // Mermaid will automatically render when startOnLoad is true
+                console.log('Mermaid content loaded');
             } catch (error) {
                 console.error('Mermaid setup error:', error);
                 showError('Failed to initialize diagram: ' + error.message);
@@ -268,10 +266,8 @@ class MermaidRenderer extends GraphRenderer {
             container.innerHTML = '<div class="error-message">' + message + '</div>';
         }
         
-        // Handle resize
-        window.addEventListener('resize', () => {
-            mermaid.run();
-        });
+        // Make renderMermaid available globally for WebView
+        window.renderMermaid = renderMermaid;
     </script>
 </body>
 </html>

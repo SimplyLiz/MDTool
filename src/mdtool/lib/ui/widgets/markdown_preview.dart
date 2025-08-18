@@ -465,19 +465,11 @@ $html
     _handleScrollRequest(appState.scrollToHeading, appState.scrollRequestId);
 
     return preferencesAsync.when(
-      data: (preferences) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Theme.of(context).dividerColor, width: 1),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: GestureDetector(
-            onSecondaryTapDown: (details) {
-              _showContextMenu(details.globalPosition);
-            },
-            child: SelectionArea(
+      data: (preferences) => GestureDetector(
+        onSecondaryTapDown: (details) {
+          _showContextMenu(details.globalPosition);
+        },
+        child: SelectionArea(
               child: CallbackShortcuts(
                 bindings: {const SingleActivator(LogicalKeyboardKey.keyA, meta: true): _selectAll, const SingleActivator(LogicalKeyboardKey.keyC, meta: true): _copyMarkdownAsFormatted, const SingleActivator(LogicalKeyboardKey.keyC, meta: true, shift: true): _copyAsRichText},
                 child: NotificationListener<ScrollNotification>(
@@ -502,9 +494,7 @@ $html
                 ),
               ),
             ),
-          ),
         ),
-      ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('Error loading preferences: $error')),
     );

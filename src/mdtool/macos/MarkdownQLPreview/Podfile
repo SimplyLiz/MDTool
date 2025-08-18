@@ -1,0 +1,8 @@
+# Podfile for MarkdownQLPreview extension
+platform :osx, '10.15'
+
+target 'MarkdownQLPreview' do
+  use_frameworks!
+  
+  # No additional pods needed for basic markdown rendering
+end

@@ -1,0 +1,133 @@
+# Flutter/Dart - Generated files
+src/mdtool/build/
+src/mdtool/.dart_tool/
+src/mdtool/.flutter-plugins
+src/mdtool/.flutter-plugins-dependencies
+src/mdtool/.packages
+src/mdtool/.pub/
+src/mdtool/.pub-cache/
+src/mdtool/.vscode/
+src/mdtool/ios/Flutter/flutter_export_environment.sh
+src/mdtool/ios/Runner.xcworkspace/
+src/mdtool/web/
+
+# Flutter test coverage
+src/mdtool/coverage/
+
+# Generated plugin registrants
+src/mdtool/ios/Runner/GeneratedPluginRegistrant.*
+src/mdtool/macos/Runner/GeneratedPluginRegistrant.*
+src/mdtool/linux/flutter/generated_plugin_registrant.*
+src/mdtool/windows/flutter/generated_plugin_registrant.*
+
+# macOS
+src/mdtool/macos/build/
+.DS_Store
+*/.DS_Store
+**/.DS_Store
+
+# macOS QuickLook Extension Build Files
+src/mdtool/macos/build/
+src/mdtool/macos/MarkdownQLPreview/build/
+src/mdtool/macos/*.xcworkspace/xcuserdata/
+src/mdtool/macos/*.xcworkspace/project.xcworkspace/xcuserdata/
+src/mdtool/macos/Runner.xcworkspace/xcuserdata/
+src/mdtool/macos/DerivedData/
+src/mdtool/macos/xcuserdata/
+
+# Xcode - User settings and build artifacts
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Swift Package Manager
+src/mdtool/macos/Packages/
+.swiftpm/
+
+# Swift compiled modules
+*.swiftmodule
+*.swiftdoc
+*.swiftinterface
+
+# CocoaPods (if used)
+src/mdtool/Pods/
+src/mdtool/Podfile.lock
+
+# IDE - VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IDE - Android Studio/IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+.gradle/
+src/mdtool/android/gradle/
+src/mdtool/android/.gradle/
+src/mdtool/android/captures/
+src/mdtool/android/local.properties
+src/mdtool/android/key.properties
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+.flutter-log
+*~
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Node modules (if any web dependencies)
+node_modules/
+npm-debug.log*
+
+# Test related
+test_driver/screenshots/
+
+# Documentation build
+docs/_build/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Local configuration files that shouldn't be shared
+*.local
+local.properties
+
+# Firebase config (if used)
+**/GoogleService-Info.plist
+**/google-services.json
+
+# Fastlane
+src/mdtool/ios/fastlane/report.xml
+src/mdtool/ios/fastlane/Preview.html
+src/mdtool/ios/fastlane/screenshots
+src/mdtool/ios/fastlane/test_output
+src/mdtool/android/fastlane/report.xml
+src/mdtool/android/fastlane/Preview.html
+src/mdtool/android/fastlane/screenshots
+src/mdtool/android/fastlane/test_output

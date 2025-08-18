@@ -131,3 +131,7 @@ src/mdtool/android/fastlane/report.xml
 src/mdtool/android/fastlane/Preview.html
 src/mdtool/android/fastlane/screenshots
 src/mdtool/android/fastlane/test_output
+
+# Build artifacts
+.build_manager/
+build/

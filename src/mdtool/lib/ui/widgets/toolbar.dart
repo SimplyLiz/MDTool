@@ -97,6 +97,9 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
     final appStateNotifier = ref.read(appStateProvider.notifier);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 800;
+    final isVeryNarrow = screenWidth < 600;
 
     return AppBar(
       title: Text(appState.currentFile != null ? _getFileName(appState.currentFile!) : 'MD Tool'),
@@ -107,11 +110,11 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
       ),
       actions: [
         // New File button - always visible
-        IconButton(icon: const Icon(Icons.note_add), onPressed: () => _newFile(context, ref), tooltip: 'New File'),
+        if (!isVeryNarrow) IconButton(icon: const Icon(Icons.note_add), onPressed: () => _newFile(context, ref), tooltip: 'New File'),
         // Add Folder button
-        IconButton(icon: const Icon(Icons.folder_open), onPressed: () => _openFolder(context, ref), tooltip: 'Open Folder'),
+        if (!isNarrow) IconButton(icon: const Icon(Icons.folder_open), onPressed: () => _openFolder(context, ref), tooltip: 'Open Folder'),
         // Diff Comparison button
-        IconButton(
+        if (!isNarrow) IconButton(
           icon: const Icon(Icons.compare_arrows), 
           onPressed: () => _openDiffComparison(context, ref), 
           tooltip: 'Text Diff Comparison'
@@ -131,24 +134,30 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
           },
         ),
         if (appState.currentFile != null) ...[
+          // Save - always visible when file is open
           IconButton(icon: const Icon(Icons.save), onPressed: appState.isDirty ? () => _saveFile(context, ref) : null, tooltip: 'Save'),
+          // Mode toggle - always visible
           IconButton(
             icon: Icon(appState.isEditMode ? Icons.edit : Icons.preview, color: Theme.of(context).colorScheme.primary),
             onPressed: () => appStateNotifier.toggleMode(),
             tooltip: appState.isEditMode ? 'Switch to Preview (Cmd+R)' : 'Switch to Edit (Cmd+R)',
           ),
-          IconButton(
+          // Preview toggle - hide on narrow screens
+          if (!isNarrow) IconButton(
             icon: Icon(appState.isPreviewVisible ? Icons.preview : Icons.preview_outlined, color: appState.isPreviewVisible ? Theme.of(context).colorScheme.primary : null),
             onPressed: () => _togglePreview(ref),
             tooltip: appState.isPreviewVisible ? 'Hide Preview' : 'Edit with Live Preview',
           ),
-          IconButton(
+          // Split screen - hide on narrow screens
+          if (!isNarrow) IconButton(
             icon: Icon(appState.isSplitScreenMode && !appState.isPreviewVisible ? Icons.call_merge : Icons.call_split, color: appState.isSplitScreenMode && !appState.isPreviewVisible ? Theme.of(context).colorScheme.primary : null),
             onPressed: () => _openSplitScreen(context, ref),
             tooltip: appState.isSplitScreenMode && !appState.isPreviewVisible ? 'Exit Split Screen' : 'Open Second File',
           ),
-          IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: () => _exportToPDF(context, ref), tooltip: 'Export PDF'),
-          Consumer(
+          // PDF export - hide on very narrow screens  
+          if (!isVeryNarrow) IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: () => _exportToPDF(context, ref), tooltip: 'Export PDF'),
+          // Chat buttons - only show on wider screens to prevent overflow
+          if (!isNarrow) Consumer(
             builder: (context, ref, child) {
               final preferences = ref.watch(preferencesProvider).valueOrNull;
               final isOllamaEnabled = preferences?.ollamaEnabled ?? false;

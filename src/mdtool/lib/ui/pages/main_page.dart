@@ -19,6 +19,7 @@ import '../../core/services/native_bridge_service.dart';
 import '../../core/services/scroll_sync_service.dart';
 import '../../core/services/directory_permissions_service.dart';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:path/path.dart' as path;
 
 class MainPage extends ConsumerStatefulWidget {
@@ -81,11 +82,12 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     
     return Scaffold(
       appBar: const MDToolbar(),
-      body: Column(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
                 // Folder Sidebar
                 FolderSidebar(
                   isVisible: appState.isFolderSidebarVisible,
@@ -127,7 +129,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                                 )
                               : null,
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(math.max(8.0, math.min(16.0, MediaQuery.of(context).size.width * 0.02))),
                             child: appState.currentFile != null
                                 ? (appState.isSplitScreenMode 
                                     ? const SplitScreenView()
@@ -179,120 +181,193 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             ),
           ),
         ],
+        ),
       ),
     );
   }
 
   Widget _buildWelcomeView(WidgetRef ref) {
     final preferences = ref.watch(preferencesProvider);
+    final screenSize = MediaQuery.of(context).size;
+    final isVerySmallScreen = screenSize.width < 500 || screenSize.height < 400;
+    final isSmallScreen = screenSize.width < 900;
     
-    return Row(
-      children: [
-        // Left side - Welcome message and buttons
-        Expanded(
-          flex: 1,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _isDragging ? Icons.file_upload : Icons.description_outlined,
-                  size: 80,
-                  color: _isDragging 
-                      ? Theme.of(context).primaryColor 
-                      : Colors.grey[400],
+    // Use adaptive layout based on screen size
+    if (isVerySmallScreen) {
+      return _buildSmallScreenWelcome(ref, preferences, screenSize);
+    }
+    
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isExtremelyNarrow = constraints.maxWidth < 450;
+        
+        return Row(
+          children: [
+            // Left side - Welcome message and buttons
+            Expanded(
+              flex: isSmallScreen ? 3 : 2,
+              child: Center(
+                child: SingleChildScrollView(
+                  child: _buildWelcomeContent(ref, screenSize),
                 ),
-                const SizedBox(height: 16),
-                TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 800),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: 0.5 + (value * 0.5),
-                      child: Opacity(
-                        opacity: value,
-                        child: Text(
-                          'MD Tool',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w300,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _isDragging 
-                      ? 'Drop your Markdown file or folder here'
-                      : 'Open a Markdown file or folder to get started',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: _isDragging 
-                        ? Theme.of(context).primaryColor 
-                        : Colors.grey[600],
-                  ),
-                ),
-                if (!_isDragging) ...[
-                  const SizedBox(height: 32),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 200,
-                        child: ElevatedButton(
-                          onPressed: () => _openFileDialog(ref),
-                          child: const Text('Open File'),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: 200,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _openFolderDialog(ref),
-                          icon: const Icon(Icons.folder_open, size: 18),
-                          label: const Text('Open Folder'),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: 200,
-                        child: OutlinedButton.icon(
-                          onPressed: () => WindowHeaderActions.openChatWithoutFile(context),
-                          icon: const Icon(Icons.chat, size: 18),
-                          label: const Text('Chat'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'or drag and drop a .md file or folder',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
+            
+            // Right side - Recent items (hide when extremely narrow or dragging)
+            if (!_isDragging && !isExtremelyNarrow) ...[
+              Container(
+                width: 1,
+                height: math.min(constraints.maxHeight * 0.8, 400.0),
+                color: Colors.grey[300],
+                margin: EdgeInsets.symmetric(
+                  horizontal: math.max(4.0, constraints.maxWidth * 0.005),
+                ),
+              ),
+              Expanded(
+                flex: isSmallScreen ? 2 : 2,
+                child: _buildRecentAndFavoritesView(ref, preferences),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSmallScreenWelcome(WidgetRef ref, AsyncValue<dynamic> preferences, Size screenSize) {
+    final isVeryNarrow = screenSize.width < 300;
+    
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(
+        horizontal: math.max(8.0, screenSize.width * 0.03),
+        vertical: 16,
+      ),
+      child: Column(
+        children: [
+          _buildWelcomeContent(ref, screenSize),
+          if (!_isDragging && !isVeryNarrow) ...[
+            SizedBox(height: math.min(32.0, screenSize.height * 0.04)),
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: math.max(200, math.min(screenSize.height * 0.4, 300)),
+                minHeight: math.min(200, screenSize.height * 0.35),
+              ),
+              child: _buildRecentAndFavoritesView(ref, preferences),
+            ),
+          ],
+          if (!_isDragging && isVeryNarrow) ...[
+            SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
+            Text(
+              'Recents & Favorites available in wider view',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeContent(WidgetRef ref, Size screenSize) {
+    final iconSize = math.min(80.0, math.max(40.0, screenSize.width * 0.08));
+    final titleSize = math.min(32.0, math.max(20.0, screenSize.width * 0.025));
+    final subtitleSize = math.min(16.0, math.max(12.0, screenSize.width * 0.015));
+    final buttonWidth = math.min(200.0, math.max(150.0, screenSize.width * 0.2));
+    
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          _isDragging ? Icons.file_upload : Icons.description_outlined,
+          size: iconSize,
+          color: _isDragging 
+              ? Theme.of(context).primaryColor 
+              : Colors.grey[400],
+        ),
+        SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
+        TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 800),
+          tween: Tween(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: 0.5 + (value * 0.5),
+              child: Opacity(
+                opacity: value,
+                child: Text(
+                  'MD Tool',
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w300,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        SizedBox(height: math.min(8.0, screenSize.height * 0.01)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: math.max(16.0, screenSize.width * 0.05)),
+          child: Text(
+            _isDragging 
+                ? 'Drop your Markdown file or folder here'
+                : 'Open a Markdown file or folder to get started',
+            style: TextStyle(
+              fontSize: subtitleSize,
+              color: _isDragging 
+                  ? Theme.of(context).primaryColor 
+                  : Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
-        
-        // Right side - Recent items (only show on start screen)
         if (!_isDragging) ...[
-          Container(
-            width: 1,
-            height: 400,
-            color: Colors.grey[300],
-            margin: const EdgeInsets.symmetric(horizontal: 32),
+          SizedBox(height: math.min(32.0, screenSize.height * 0.04)),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: buttonWidth,
+                child: ElevatedButton(
+                  onPressed: () => _openFileDialog(ref),
+                  child: const Text('Open File'),
+                ),
+              ),
+              SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
+              SizedBox(
+                width: buttonWidth,
+                child: ElevatedButton.icon(
+                  onPressed: () => _openFolderDialog(ref),
+                  icon: const Icon(Icons.folder_open, size: 18),
+                  label: const Text('Open Folder'),
+                ),
+              ),
+              SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
+              SizedBox(
+                width: buttonWidth,
+                child: OutlinedButton.icon(
+                  onPressed: () => WindowHeaderActions.openChatWithoutFile(context),
+                  icon: const Icon(Icons.chat, size: 18),
+                  label: const Text('Chat'),
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            flex: 1,
-            child: _buildRecentAndFavoritesView(ref, preferences),
+          SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: math.max(16.0, screenSize.width * 0.05)),
+            child: Text(
+              'or drag and drop a .md file or folder',
+              style: TextStyle(
+                fontSize: math.max(12.0, subtitleSize * 0.875),
+                color: Colors.grey[500],
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ],
@@ -302,20 +377,23 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
   Widget _buildRecentAndFavoritesView(WidgetRef ref, AsyncValue<dynamic> preferencesAsync) {
     return preferencesAsync.when(
       data: (preferences) {
-        return Column(
-          children: [
-            // Custom segmented control
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 300;
+            return Column(
+              children: [
+                // Custom segmented control
+                Container(
+                  margin: EdgeInsets.all(isCompact ? 8 : 16),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
               child: Row(
                 children: [
                   Expanded(
@@ -326,7 +404,10 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                         builder: (context, child) {
                           final isSelected = _tabController.index == 0;
                           return Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                            padding: EdgeInsets.symmetric(
+                              vertical: 8, 
+                              horizontal: isCompact ? 8 : 16
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected 
                                 ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
@@ -344,25 +425,31 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.history,
-                                  size: 18,
+                                  size: isCompact ? 16 : 18,
                                   color: isSelected 
                                     ? Theme.of(context).colorScheme.onPrimary
                                     : Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Recent',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                    color: isSelected 
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                if (!isCompact || constraints.maxWidth > 200) ...[
+                                  SizedBox(width: isCompact ? 4 : 6),
+                                  Flexible(
+                                    child: Text(
+                                      'Recent',
+                                      style: TextStyle(
+                                        fontSize: isCompact ? 12 : 14,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        color: isSelected 
+                                          ? Theme.of(context).colorScheme.onPrimary
+                                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           );
@@ -378,7 +465,10 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                         builder: (context, child) {
                           final isSelected = _tabController.index == 1;
                           return Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                            padding: EdgeInsets.symmetric(
+                              vertical: 8, 
+                              horizontal: isCompact ? 8 : 16
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected 
                                 ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
@@ -396,25 +486,31 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.star,
-                                  size: 18,
+                                  size: isCompact ? 16 : 18,
                                   color: isSelected 
                                     ? Theme.of(context).colorScheme.onPrimary
                                     : Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Favorites',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                    color: isSelected 
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                if (!isCompact || constraints.maxWidth > 200) ...[
+                                  SizedBox(width: isCompact ? 4 : 6),
+                                  Flexible(
+                                    child: Text(
+                                      'Favorites',
+                                      style: TextStyle(
+                                        fontSize: isCompact ? 12 : 14,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        color: isSelected 
+                                          ? Theme.of(context).colorScheme.onPrimary
+                                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           );
@@ -427,15 +523,21 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             ),
             // Tab view
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildRecentItemsList(ref, preferences),
-                  _buildFavoriteItemsList(ref, preferences),
-                ],
+              child: LayoutBuilder(
+                builder: (context, tabConstraints) {
+                  return TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildRecentItemsList(ref, preferences, tabConstraints),
+                      _buildFavoriteItemsList(ref, preferences, tabConstraints),
+                    ],
+                  );
+                },
               ),
             ),
           ],
+        );
+          },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -452,7 +554,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildRecentItemsList(WidgetRef ref, dynamic preferences) {
+  Widget _buildRecentItemsList(WidgetRef ref, dynamic preferences, [BoxConstraints? constraints]) {
     final recentItems = preferences.recentItems as List<RecentItem>;
     
     if (recentItems.isEmpty) {
@@ -513,10 +615,11 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         ),
         Expanded(
           child: ListView.builder(
+            shrinkWrap: constraints != null && constraints.maxHeight < 400,
             itemCount: recentItems.length,
             itemBuilder: (context, index) {
               final item = recentItems[index];
-              return _buildRecentItemTile(ref, item);
+              return _buildRecentItemTile(ref, item, constraints);
             },
           ),
         ),
@@ -524,7 +627,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildFavoriteItemsList(WidgetRef ref, dynamic preferences) {
+  Widget _buildFavoriteItemsList(WidgetRef ref, dynamic preferences, [BoxConstraints? constraints]) {
     final favoriteItems = preferences.favoriteItems as List<FavoriteItem>;
     
     if (favoriteItems.isEmpty) {
@@ -585,10 +688,11 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         ),
         Expanded(
           child: ListView.builder(
+            shrinkWrap: constraints != null && constraints.maxHeight < 400,
             itemCount: favoriteItems.length,
             itemBuilder: (context, index) {
               final item = favoriteItems[index];
-              return _buildFavoriteItemTile(ref, item);
+              return _buildFavoriteItemTile(ref, item, constraints);
             },
           ),
         ),
@@ -596,13 +700,17 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildRecentItemTile(WidgetRef ref, RecentItem item) {
+  Widget _buildRecentItemTile(WidgetRef ref, RecentItem item, [BoxConstraints? constraints]) {
     final isFile = item.type == RecentItemType.file;
     final icon = isFile ? Icons.description : Icons.folder;
     final subtitle = isFile ? 'File' : 'Folder';
+    final isCompact = constraints != null && constraints.maxWidth < 300;
     
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: EdgeInsets.symmetric(
+        horizontal: isCompact ? 8 : 16, 
+        vertical: isCompact ? 2 : 4
+      ),
       child: ListTile(
         leading: Icon(icon, color: isFile ? Colors.blue[600] : Colors.amber[700]),
         title: Text(
@@ -670,13 +778,17 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildFavoriteItemTile(WidgetRef ref, FavoriteItem item) {
+  Widget _buildFavoriteItemTile(WidgetRef ref, FavoriteItem item, [BoxConstraints? constraints]) {
     final isFile = item.type == FavoriteItemType.file;
     final icon = isFile ? Icons.description : Icons.folder;
     final subtitle = isFile ? 'File' : 'Folder';
+    final isCompact = constraints != null && constraints.maxWidth < 300;
     
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: EdgeInsets.symmetric(
+        horizontal: isCompact ? 8 : 16, 
+        vertical: isCompact ? 2 : 4
+      ),
       child: ListTile(
         leading: Icon(icon, color: isFile ? Colors.blue[600] : Colors.amber[700]),
         title: Text(

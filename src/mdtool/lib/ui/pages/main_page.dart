@@ -3,15 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
-import '../widgets/editor_view.dart';
-import '../widgets/split_screen_view.dart';
 import '../widgets/toolbar.dart';
 import '../widgets/status_bar.dart';
 import '../widgets/folder_sidebar.dart';
+import '../widgets/window_manager.dart';
 import '../widgets/window_header.dart';
 import '../../core/providers/app_state_provider.dart';
 import '../../core/providers/preferences_provider.dart';
-import '../../core/models/app_state.dart';
 import '../../core/models/recent_item.dart';
 import '../../core/models/favorite_item.dart';
 import '../../core/services/file_service.dart';
@@ -48,7 +46,6 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
-    final preferences = ref.watch(preferencesProvider);
     
     // Initialize ScrollSyncService with preferences - moved outside build cycle
     ref.listen(preferencesProvider, (previous, next) {
@@ -131,33 +128,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                           child: Container(
                             padding: EdgeInsets.all(math.max(8.0, math.min(16.0, MediaQuery.of(context).size.width * 0.02))),
                             child: appState.currentFile != null
-                                ? (appState.isSplitScreenMode 
-                                    ? const SplitScreenView()
-                                    : Column(
-                                        children: [
-                                          WindowHeader(
-                                            windowType: appState.isEditMode ? WindowType.editor : WindowType.preview,
-                                            activeWindowType: ActiveWindow.primary,
-                                            filePath: appState.currentFile,
-                                            onOpenFile: () => WindowHeaderActions.openFileDialog(ref),
-                                            onNewFile: () => WindowHeaderActions.createNewFile(ref),
-                                            onChat: appState.currentFile != null 
-                                                ? () => WindowHeaderActions.openChatWithFile(context, appState.currentFile)
-                                                : null,
-                                            onSave: () => _saveFile(ref),
-                                            onClose: appState.currentFile != null
-                                                ? () => ref.read(appStateProvider.notifier).closeFile()
-                                                : null,
-                                            onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.primary),
-                                          ),
-                                          Expanded(
-                                            child: GestureDetector(
-                                              onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.primary),
-                                              child: const EditorView(),
-                                            ),
-                                          ),
-                                        ],
-                                      ))
+                                ? const WindowManager()
                                 : _buildWelcomeView(ref),
                           ),
                         );

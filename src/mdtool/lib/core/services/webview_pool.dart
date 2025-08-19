@@ -91,17 +91,20 @@ class WebViewPool {
             overflow: hidden;
             min-height: 100px;
             height: auto;
+            /* Prevent scroll event capture */
+            pointer-events: none;
         }
         
         #mermaid-container {
             width: 100%;
             max-width: 100vw;
-            overflow-x: auto;
-            overflow-y: hidden;
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: flex-start;
             padding: 0;
+            /* Prevent any scrolling within container */
+            pointer-events: none;
         }
         
         #mermaid-graph {
@@ -115,6 +118,8 @@ class WebViewPool {
             display: block;
             height: auto !important;
             margin: 0 auto;
+            /* Ensure SVG doesn't capture scroll events */
+            pointer-events: none;
         }
         
         /* Ensure text remains readable */

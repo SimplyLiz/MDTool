@@ -54,7 +54,7 @@ class MDToolApp extends ConsumerWidget {
         }
         
         return MaterialApp(
-          title: 'MD Tool',
+          title: 'MDTool',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeMode,
@@ -79,7 +79,7 @@ class MDToolApp extends ConsumerWidget {
         );
       },
       loading: () => MaterialApp(
-        title: 'MD Tool',
+        title: 'MDTool',
         theme: AppTheme.lightTheme,
         home: const Scaffold(
           body: Center(
@@ -89,7 +89,7 @@ class MDToolApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
       ),
       error: (error, stack) => MaterialApp(
-        title: 'MD Tool',
+        title: 'MDTool',
         theme: AppTheme.lightTheme,
         home: Scaffold(
           body: Center(

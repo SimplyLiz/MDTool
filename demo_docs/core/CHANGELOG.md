@@ -23,7 +23,7 @@ All notable changes to this demo project will be documented in this file.
 ## [1.5.0] - 2024-07-01
 
 ### Added
-- Basic [examples](examples/basic/hello-world.md)
+- Basic [examples](../tests/basic/hello-world.md)
 - [Deployment documentation](guides/how-to/deployment.md)
 
 ### Improved

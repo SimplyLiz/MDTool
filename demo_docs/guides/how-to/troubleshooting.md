@@ -19,7 +19,7 @@ If markdown links aren't working:
 For navigation issues:
 - Review [getting started guide](../../docs/user-guide/getting-started.md)
 - Check [tutorial examples](../../guides/tutorials/tutorial-01.md)
-- Test with [hello world example](../../examples/basic/hello-world.md)
+- Test with [hello world example](../../tests/basic/hello-world.md)
 
 ### API Issues
 For API-related problems:

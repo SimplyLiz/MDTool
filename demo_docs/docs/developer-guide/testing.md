@@ -46,7 +46,7 @@ Test all link types systematically:
 #### Cross-Category Navigation
 - **User to Developer**: [Getting Started](../user-guide/getting-started.md) → [Architecture](architecture.md)
 - **Developer to API**: [Architecture](architecture.md) → [API Overview](../../api/reference/api-overview.md)
-- **API to Examples**: [API Overview](../../api/reference/api-overview.md) → [Examples](../../examples/basic/hello-world.md)
+- **API to Examples**: [API Overview](../../api/reference/api-overview.md) → [Examples](../../tests/basic/hello-world.md)
 
 ### User Experience Testing
 
@@ -81,7 +81,7 @@ Test common user journeys:
 
 #### Navigation Speed Tests
 - **Quick navigation**: Test rapid clicking through [multiple links](../../README.md#-documentation-navigation)
-- **Deep linking**: Test performance of [nested navigation](../../examples/advanced/complex-example.md)
+- **Deep linking**: Test performance of [nested navigation](../../tests/advanced/complex-example.md)
 - **Anchor jumping**: Test smooth scrolling to [document sections](#test-categories)
 
 ### Usability Testing
@@ -89,7 +89,7 @@ Test common user journeys:
 #### Documentation Discoverability
 - Users can find [getting started information](../user-guide/getting-started.md)
 - [API documentation](../../api/reference/) is accessible
-- [Examples](../../examples/) are easy to locate
+- [Examples](../../tests/) are easy to locate
 - [Troubleshooting](../../guides/how-to/troubleshooting.md) is findable
 
 ## Testing Procedures
@@ -150,7 +150,7 @@ test_cross_references --verify-bidirectional
 ### Advanced Navigation Tests
 - [Complex cross-references](../../guides/tutorials/tutorial-02.md#advanced-features)
 - [Multi-level anchors](architecture.md#performance-patterns)
-- [Deep folder navigation](../../examples/advanced/complex-example.md)
+- [Deep folder navigation](../../tests/advanced/complex-example.md)
 
 ### Edge Case Testing
 - **Empty anchor links**: `[text](#)`
@@ -181,8 +181,8 @@ test_cross_references --verify-bidirectional
 - [Advanced Usage](../user-guide/advanced-usage.md) - Advanced feature testing
 
 ### Examples and Tutorials
-- [Basic Examples](../../examples/basic/) - Simple test cases
-- [Advanced Examples](../../examples/advanced/) - Complex test scenarios
+- [Basic Examples](../../tests/basic/) - Simple test cases
+- [Advanced Examples](../../tests/advanced/) - Complex test scenarios
 - [Tutorial Series](../../guides/tutorials/) - Guided testing procedures
 
 ---

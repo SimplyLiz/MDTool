@@ -21,8 +21,8 @@ Before contributing, please read our [main documentation](DOCUMENTATION.md) and 
 - Update the [README](README.md) when adding new files
 
 ### Code Examples
-- Add examples to the [examples directory](examples/)
-- Start with [basic examples](examples/basic/) before creating [advanced ones](examples/advanced/)
+- Add examples to the [tests directory](../tests/)
+- Start with [basic examples](../tests/basic/) before creating [advanced ones](../tests/advanced/)
 - Reference examples from relevant documentation
 
 ### API Changes

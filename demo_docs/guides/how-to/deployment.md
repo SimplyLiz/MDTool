@@ -26,7 +26,7 @@ This guide covers deployment procedures with links to related documentation.
 ### Testing Deployment
 - Run [integration tests](../../docs/developer-guide/testing.md#integration-testing)
 - Verify [API functionality](../../api/reference/api-overview.md)
-- Check [example implementations](../../examples/advanced/complex-example.md)
+- Check [example implementations](../../tests/advanced/complex-example.md)
 
 ## Troubleshooting
 For deployment issues, see the [troubleshooting guide](troubleshooting.md).

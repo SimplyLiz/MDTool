@@ -32,16 +32,16 @@ demo_docs/
 │   │   └── endpoints.md
 │   └── changelog/
 │       └── api-changelog.md
-├── examples/
-│   ├── basic/
-│   │   └── hello-world.md
-│   ├── advanced/
-│   │   └── complex-example.md
-│   └── graphs/
-│       ├── native_graphs.md
-│       └── mermaid_graphs.md
 └── tests/
-    └── code_blocks.md
+    ├── basic/
+    │   └── hello-world.md
+    ├── advanced/
+    │   └── complex-example.md
+    ├── graphs/
+    │   ├── native_graphs.md
+    │   └── mermaid_graphs.md
+    └── code/
+        └── code_blocks.md
 ```
 
 ## 📖 Documentation Navigation
@@ -78,11 +78,11 @@ demo_docs/
 
 ### Examples & Testing
 
-- [👋 Hello World Example](../examples/basic/hello-world.md)
-- [🔧 Complex Example](../examples/advanced/complex-example.md)
-- [📊 Native Graph Examples](../examples/graphs/native_graphs.md) - Charts, flowcharts, git graphs, PlantUML
-- [📈 Mermaid Graph Examples](../examples/graphs/mermaid_graphs.md) - All Mermaid diagram types
-- [💻 Code Block Tests](../tests/code_blocks.md) - Syntax highlighting examples
+- [👋 Hello World Example](../tests/basic/hello-world.md)
+- [🔧 Complex Example](../tests/advanced/complex-example.md)
+- [📊 Native Graph Examples](../tests/graphs/native_graphs.md) - Charts, flowcharts, git graphs, PlantUML
+- [📈 Mermaid Graph Examples](../tests/graphs/mermaid_graphs.md) - All Mermaid diagram types
+- [💻 Code Block Tests](../tests/code/code_blocks.md) - Syntax highlighting examples
 
 ## 🔗 Key Features Demonstrated
 

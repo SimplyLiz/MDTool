@@ -34,7 +34,7 @@ Complete these before starting:
 Navigate across complex hierarchies:
 ```markdown
 [Deep API Reference](../../api/reference/endpoints.md#authentication)
-[Nested Example](../../examples/advanced/complex-example.md#implementation-details)
+[Nested Example](../../tests/advanced/complex-example.md#implementation-details)
 [Architecture Patterns](../../docs/developer-guide/architecture.md#design-patterns)
 ```
 
@@ -83,7 +83,7 @@ API Reference ←→ Examples ←→ Tutorials
 1. [Project Overview](../../README.md#-project-structure)
 2. [Specific User Guide](../../docs/user-guide/getting-started.md#basic-concepts)
 3. [Detailed Implementation](../../docs/developer-guide/architecture.md#component-structure)
-4. [Practical Example](../../examples/advanced/complex-example.md)
+4. [Practical Example](../../tests/advanced/complex-example.md)
 
 ## Advanced Exercises
 
@@ -99,7 +99,7 @@ Create a complex navigation path:
 Navigate across different content categories:
 - **Documentation**: [Architecture](../../docs/developer-guide/architecture.md)
 - **Tutorials**: [This tutorial](tutorial-02.md)
-- **Examples**: [Complex Example](../../examples/advanced/complex-example.md)
+- **Examples**: [Complex Example](../../tests/advanced/complex-example.md)
 - **API**: [Reference](../../api/reference/api-overview.md)
 - **Guides**: [Deployment](../how-to/deployment.md)
 
@@ -119,7 +119,7 @@ Complete API documentation journey:
 1. [API Overview](../../api/reference/api-overview.md) - High-level concepts
 2. [Detailed Endpoints](../../api/reference/endpoints.md) - Specific implementations
 3. [Change History](../../api/changelog/api-changelog.md) - Version information
-4. [Integration Examples](../../examples/advanced/complex-example.md) - Practical usage
+4. [Integration Examples](../../tests/advanced/complex-example.md) - Practical usage
 
 #### Scenario 2: Developer Onboarding Flow
 New developer journey:
@@ -138,7 +138,7 @@ Create workflows that span multiple documents:
 - [Getting Started](../../docs/user-guide/getting-started.md#quick-start)
 - [First Tutorial](tutorial-01.md#practical-examples)
 - [Advanced Features](../../docs/user-guide/advanced-usage.md#advanced-features)
-- [Complex Examples](../../examples/advanced/complex-example.md)
+- [Complex Examples](../../tests/advanced/complex-example.md)
 
 **Development Workflow:**
 - [Contributing Guidelines](../../CONTRIBUTING.md#development-setup)
@@ -230,7 +230,7 @@ For projects with extensive documentation:
 - [Testing Procedures](../../docs/developer-guide/testing.md) - Validation techniques
 
 ### Practical Applications
-- [Complex Examples](../../examples/advanced/complex-example.md) - Real implementations
+- [Complex Examples](../../tests/advanced/complex-example.md) - Real implementations
 - [Deployment Scenarios](../how-to/deployment.md) - Production usage
 - [API Integration](../../api/reference/api-overview.md) - Technical integration
 
@@ -256,7 +256,7 @@ This advanced tutorial covered:
 - [Testing Guide](../../docs/developer-guide/testing.md) - Validation procedures
 
 ### Practical Resources
-- [Examples](../../examples/) - Implementation examples
+- [Examples](../../tests/) - Implementation examples
 - [API Reference](../../api/reference/) - Technical documentation
 - [How-to Guides](../how-to/) - Practical solutions
 

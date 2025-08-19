@@ -5,21 +5,21 @@ Welcome to the comprehensive MDTool demo documentation! This collection showcase
 ## 🚀 Quick Start
 
 - **New to MDTool?** Start with [Getting Started Guide](docs/user-guide/getting-started.md)
-- **Want to see graphs?** Check out [Native Graphs](examples/graphs/native_graphs.md) and [Mermaid Graphs](examples/graphs/mermaid_graphs.md)
+- **Want to see graphs?** Check out [Native Graphs](tests/graphs/native_graphs.md) and [Mermaid Graphs](tests/graphs/mermaid_graphs.md)
 - **Testing features?** Use [Code Block Tests](tests/code_blocks.md)
 - **Full overview?** See [Project README](core/README.md)
 
 ## 📊 Graph Examples
 
 ### Native Graph Renderers (Non-Mermaid)
-**[📊 Native Graph Examples](examples/graphs/native_graphs.md)**
+**[📊 Native Graph Examples](tests/graphs/native_graphs.md)**
 - Statistical Charts: bar, line, pie, scatter, area charts
 - Flowcharts: process flows with decision nodes
 - Git Graphs: branch visualization and commit history
 - PlantUML: sequence, class, use case, component diagrams
 
 ### Mermaid Diagrams
-**[📈 Mermaid Graph Examples](examples/graphs/mermaid_graphs.md)**
+**[📈 Mermaid Graph Examples](tests/graphs/mermaid_graphs.md)**
 - Flowcharts and system architecture
 - Sequence diagrams and API flows  
 - Class diagrams and database schemas
@@ -54,18 +54,18 @@ Welcome to the comprehensive MDTool demo documentation! This collection showcase
 - [🛠️ Troubleshooting](guides/how-to/troubleshooting.md)
 
 ### Examples & Testing
-- [👋 Hello World](examples/basic/hello-world.md) - Simple markdown usage
-- [🔧 Complex Example](examples/advanced/complex-example.md) - Advanced patterns
+- [👋 Hello World](tests/basic/hello-world.md) - Simple markdown usage
+- [🔧 Complex Example](tests/advanced/complex-example.md) - Advanced patterns
 - [💻 Code Block Tests](tests/code_blocks.md) - Syntax highlighting
 
 ## 🎯 Feature Testing Guide
 
 ### Graph Rendering Tests
-1. **Statistical Charts**: Open [Native Graphs](examples/graphs/native_graphs.md) → Test bar, line, pie, scatter, area charts
+1. **Statistical Charts**: Open [Native Graphs](tests/graphs/native_graphs.md) → Test bar, line, pie, scatter, area charts
 2. **Flowcharts**: Test process flows and decision trees with various node types
 3. **Git Graphs**: Verify branch visualization and commit history rendering
 4. **PlantUML**: Test sequence, class, use case, and component diagrams
-5. **Mermaid**: Open [Mermaid Graphs](examples/graphs/mermaid_graphs.md) → Test all Mermaid diagram types
+5. **Mermaid**: Open [Mermaid Graphs](tests/graphs/mermaid_graphs.md) → Test all Mermaid diagram types
 
 ### Navigation Tests  
 1. **Cross-document Links**: Use this index to navigate between different sections
@@ -87,7 +87,7 @@ demo_docs/
 ├── docs/                    # User and developer guides
 ├── api/                     # API documentation
 ├── guides/                  # Tutorials and how-to guides
-├── examples/                # Usage examples
+├── tests/                   # Usage examples
 │   ├── basic/              # Simple examples
 │   ├── advanced/           # Complex examples
 │   └── graphs/             # Graph examples
@@ -162,4 +162,4 @@ This demo project can be customized for your needs:
 
 ---
 
-**Ready to explore?** Start with [Getting Started Guide](docs/user-guide/getting-started.md) or jump directly to [Graph Examples](examples/graphs/native_graphs.md)!
+**Ready to explore?** Start with [Getting Started Guide](docs/user-guide/getting-started.md) or jump directly to [Graph Examples](tests/graphs/native_graphs.md)!

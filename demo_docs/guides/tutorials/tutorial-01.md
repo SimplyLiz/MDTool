@@ -55,12 +55,12 @@ Link to resources outside the project:
 Try navigating between these related documents:
 - [Main Documentation](../../DOCUMENTATION.md)
 - [API Overview](../../api/reference/api-overview.md)
-- [Hello World Example](../../examples/basic/hello-world.md)
+- [Hello World Example](../../tests/basic/hello-world.md)
 
 ### Example 2: Cross-Directory Navigation
 Navigate across different documentation categories:
 - **From tutorials to guides**: [Deployment Guide](../how-to/deployment.md)
-- **From tutorials to examples**: [Complex Example](../../examples/advanced/complex-example.md)
+- **From tutorials to examples**: [Complex Example](../../tests/advanced/complex-example.md)
 - **From tutorials to API**: [API Endpoints](../../api/reference/endpoints.md)
 
 ## Hands-On Exercises
@@ -98,7 +98,7 @@ Understanding complex path structures:
 #### Deep Directory Navigation
 ```markdown
 [Deep nested file](../../api/reference/endpoints.md)
-[Complex example](../../examples/advanced/complex-example.md)
+[Complex example](../../tests/advanced/complex-example.md)
 ```
 
 ### Best Practices
@@ -160,7 +160,7 @@ Ensure referenced sections exist:
 ### Continue Learning
 1. **Advanced Tutorial**: [Tutorial 02](tutorial-02.md) - Complex navigation patterns
 2. **How-to Guides**: [Deployment](../how-to/deployment.md) - Practical applications
-3. **Examples**: [Hello World](../../examples/basic/hello-world.md) - Simple implementations
+3. **Examples**: [Hello World](../../tests/basic/hello-world.md) - Simple implementations
 
 ### Additional Resources
 - [Advanced Usage Guide](../../docs/user-guide/advanced-usage.md) - Power user features
@@ -170,7 +170,7 @@ Ensure referenced sections exist:
 ### Practice Projects
 Try creating your own documentation with:
 - [Contributing Guidelines](../../CONTRIBUTING.md) for best practices
-- [Examples](../../examples/) for inspiration
+- [Examples](../../tests/) for inspiration
 - [API Reference](../../api/reference/) for technical documentation
 
 ## Summary
@@ -193,8 +193,8 @@ This tutorial covered:
 - [Advanced Usage](../../docs/user-guide/advanced-usage.md) - Power features
 
 ### Examples
-- [Hello World](../../examples/basic/hello-world.md) - Simple example
-- [Complex Example](../../examples/advanced/complex-example.md) - Advanced example
+- [Hello World](../../tests/basic/hello-world.md) - Simple example
+- [Complex Example](../../tests/advanced/complex-example.md) - Advanced example
 
 ---
 

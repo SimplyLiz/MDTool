@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../graph_renderer.dart';
 import '../webview_pool.dart';
+import '../../../ui/widgets/interactive_mermaid_viewer.dart';
 
 /// Mermaid graph renderer using WebView
 class MermaidRenderer extends GraphRenderer {
@@ -242,10 +243,10 @@ class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
       );
     }
 
-    return SizedBox(
+    return InteractiveMermaidViewer(
+      controller: controller!,
       width: widget.options?.width ?? double.infinity,
       height: widget.options?.height ?? height,
-      child: WebViewWidget(controller: controller!),
     );
   }
 }

@@ -135,7 +135,7 @@ class _PooledMermaidWebView extends StatefulWidget {
 
 class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
   WebViewController? controller;
-  double height = 400; // Initial height
+  double height = 200; // Initial height, will be updated by JS
   final WebViewPool _pool = WebViewPool();
   bool _isLoading = true;
   late final String _channelName; // Unique channel name for this instance

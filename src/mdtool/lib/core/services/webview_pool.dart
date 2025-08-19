@@ -89,7 +89,7 @@ class WebViewPool {
             background: $bgColor;
             color: ${theme == 'dark' ? '#ffffff' : '#000000'};
             overflow: hidden;
-            min-height: 200px;
+            min-height: 100px;
             height: auto;
         }
         
@@ -110,12 +110,11 @@ class WebViewPool {
             height: auto;
         }
         
-        /* Force responsive scaling with proper overrides */
+        /* Responsive scaling with dynamic width adjustment */
         #mermaid-graph svg {
-            max-width: none !important;
-            width: 100% !important;
-            height: auto !important;
             display: block;
+            height: auto !important;
+            margin: 0 auto;
         }
         
         /* Ensure text remains readable */
@@ -247,23 +246,42 @@ class WebViewPool {
                 requestAnimationFrame(() => {
                     const svgElement = container.querySelector('svg');
                     if (svgElement) {
-                        // Remove fixed dimensions and max-width constraints
+                        // Get natural dimensions for aspect ratio calculation
+                        const bbox = svgElement.getBBox();
+                        const naturalWidth = bbox.width || parseFloat(svgElement.getAttribute('width')) || 300;
+                        const naturalHeight = bbox.height || parseFloat(svgElement.getAttribute('height')) || 200;
+                        
+                        // Calculate aspect ratio
+                        const aspectRatio = naturalWidth / naturalHeight;
+                        
+                        // Remove fixed dimensions
                         svgElement.removeAttribute('width');
                         svgElement.removeAttribute('height');
-                        svgElement.style.maxWidth = 'none';
-                        svgElement.style.width = '100%';
                         svgElement.style.height = 'auto';
                         
-                        // Calculate actual content height and send to Flutter
-                        const svgBounds = svgElement.getBoundingClientRect();
-                        const contentHeight = svgBounds.height + 32; // Add padding
-                        const minHeight = Math.max(200, contentHeight);
-                        
-                        // Send height to Flutter via JavaScript channel
-                        // Use the channel name set by the current chart instance
-                        if (window.currentHeightChannel && window[window.currentHeightChannel]) {
-                            window[window.currentHeightChannel].postMessage(minHeight.toString());
+                        // Apply smart scaling for tall charts
+                        if (aspectRatio < 1.0) { // Tall chart
+                            const targetMaxHeight = 400;
+                            const optimalWidth = Math.min(600, targetMaxHeight * aspectRatio);
+                            svgElement.style.maxWidth = optimalWidth + 'px';
+                            svgElement.style.width = 'auto';
+                        } else { // Wide or square chart
+                            svgElement.style.width = '100%';
+                            svgElement.style.maxWidth = 'none';
                         }
+                        
+                        // Calculate and send height to Flutter
+                        setTimeout(() => {
+                            const svgBounds = svgElement.getBoundingClientRect();
+                            // Add padding (16px top + 16px bottom) + small buffer
+                            const contentHeight = svgBounds.height + 40;
+                            // Reduced minimum height for better auto-sizing
+                            const minHeight = Math.max(100, contentHeight);
+                            
+                            if (window.currentHeightChannel && window[window.currentHeightChannel]) {
+                                window[window.currentHeightChannel].postMessage(minHeight.toString());
+                            }
+                        }, 50);
                     }
                 });
             } catch (error) {

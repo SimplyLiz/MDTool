@@ -38,11 +38,11 @@ class PDFExportService {
       // Create PDF document
       final pdf = pw.Document();
       
-      // Load system fonts
-      final fontRegular = await PdfGoogleFonts.notoSansRegular();
-      final fontBold = await PdfGoogleFonts.notoSansBold();
-      final fontItalic = await PdfGoogleFonts.notoSansItalic();
-      final fontMono = await PdfGoogleFonts.notoSansMonoRegular();
+      // Use base fonts (no external font loading needed)
+      final fontRegular = pw.Font.helvetica();
+      final fontBold = pw.Font.helveticaBold();
+      final fontItalic = pw.Font.helveticaOblique();
+      final fontMono = pw.Font.courier();
       
       onProgress?.call(0.5);
 
@@ -64,35 +64,20 @@ class PDFExportService {
       
       onProgress?.call(0.7);
 
-      // Add pages to PDF
-      // Split widgets into pages to handle large documents
-      const int maxWidgetsPerPage = 50;
-      final List<List<pw.Widget>> pages = [];
-      
-      for (int i = 0; i < pdfWidgets.length; i += maxWidgetsPerPage) {
-        final end = (i + maxWidgetsPerPage < pdfWidgets.length) 
-            ? i + maxWidgetsPerPage 
-            : pdfWidgets.length;
-        pages.add(pdfWidgets.sublist(i, end));
-      }
-      
-      // Add each page
-      for (final pageWidgets in pages) {
-        pdf.addPage(
-          pw.MultiPage(
-            pageFormat: pageFormat,
-            margin: pw.EdgeInsets.all(margin),
-            build: (pw.Context context) => pageWidgets,
-            theme: pw.ThemeData.withFont(
-              base: fontRegular,
-              bold: fontBold,
-              italic: fontItalic,
-              boldItalic: fontBold, // Fallback
-            ),
-            // PDF compression handled automatically
+      // Add all content to a single MultiPage - it will handle page breaks automatically
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: pageFormat,
+          margin: pw.EdgeInsets.all(margin),
+          build: (pw.Context context) => pdfWidgets,
+          theme: pw.ThemeData.withFont(
+            base: fontRegular,
+            bold: fontBold,
+            italic: fontItalic,
+            boldItalic: fontBold, // Fallback
           ),
-        );
-      }
+        ),
+      );
       
       onProgress?.call(0.9);
 
@@ -179,6 +164,7 @@ class PDFExportService {
                 fontSize: fontSize,
                 height: _defaultLineHeight,
               ),
+              softWrap: true,
             ),
           );
         
@@ -196,27 +182,65 @@ class PDFExportService {
                 font: fontMono,
                 fontSize: fontSize * 0.9,
               ),
+              softWrap: true,
             ),
           );
         
         case 'pre':
-          return pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.all(12),
-            margin: const pw.EdgeInsets.symmetric(vertical: 8),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.grey200,
-              borderRadius: pw.BorderRadius.circular(4),
-              border: pw.Border.all(color: PdfColors.grey400),
-            ),
-            child: pw.Text(
-              node.textContent,
-              style: pw.TextStyle(
-                font: fontMono,
-                fontSize: fontSize * 0.9,
+          // Split very long code blocks to prevent page overflow
+          final content = node.textContent;
+          const maxLines = 40; // Reasonable max lines per code block
+          final lines = content.split('\n');
+          
+          if (lines.length > maxLines) {
+            // Split into chunks
+            final chunks = <String>[];
+            for (int i = 0; i < lines.length; i += maxLines) {
+              final end = (i + maxLines < lines.length) ? i + maxLines : lines.length;
+              chunks.add(lines.sublist(i, end).join('\n'));
+            }
+            
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: chunks.map((chunk) => pw.Container(
+                width: double.infinity,
+                padding: const pw.EdgeInsets.all(12),
+                margin: const pw.EdgeInsets.symmetric(vertical: 8),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey200,
+                  borderRadius: pw.BorderRadius.circular(4),
+                  border: pw.Border.all(color: PdfColors.grey400),
+                ),
+                child: pw.Text(
+                  chunk,
+                  style: pw.TextStyle(
+                    font: fontMono,
+                    fontSize: fontSize * 0.9,
+                  ),
+                  softWrap: true,
+                ),
+              )).toList(),
+            );
+          } else {
+            return pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(12),
+              margin: const pw.EdgeInsets.symmetric(vertical: 8),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey200,
+                borderRadius: pw.BorderRadius.circular(4),
+                border: pw.Border.all(color: PdfColors.grey400),
               ),
-            ),
-          );
+              child: pw.Text(
+                content,
+                style: pw.TextStyle(
+                  font: fontMono,
+                  fontSize: fontSize * 0.9,
+                ),
+                softWrap: true,
+              ),
+            );
+          }
         
         case 'blockquote':
           return pw.Container(
@@ -235,6 +259,7 @@ class PDFExportService {
                 fontStyle: pw.FontStyle.italic,
                 color: PdfColors.grey700,
               ),
+              softWrap: true,
             ),
           );
         
@@ -254,6 +279,7 @@ class PDFExportService {
                         child: pw.Text(
                           child.textContent,
                           style: pw.TextStyle(font: fontRegular, fontSize: fontSize),
+                          softWrap: true,
                         ),
                       ),
                     ],
@@ -281,6 +307,7 @@ class PDFExportService {
                         child: pw.Text(
                           child.textContent,
                           style: pw.TextStyle(font: fontRegular, fontSize: fontSize),
+                          softWrap: true,
                         ),
                       ),
                     ],
@@ -319,6 +346,7 @@ class PDFExportService {
         return pw.Text(
           node.text,
           style: pw.TextStyle(font: fontRegular, fontSize: fontSize),
+          softWrap: true,
         );
       }
     }
@@ -403,11 +431,11 @@ class PDFExportService {
       
       final pdf = pw.Document();
       
-      // Load fonts
-      final fontRegular = await PdfGoogleFonts.notoSansRegular();
-      final fontBold = await PdfGoogleFonts.notoSansBold();
-      final fontItalic = await PdfGoogleFonts.notoSansItalic();
-      final fontMono = await PdfGoogleFonts.notoSansMonoRegular();
+      // Use base fonts (no external font loading needed)
+      final fontRegular = pw.Font.helvetica();
+      final fontBold = pw.Font.helveticaBold();
+      final fontItalic = pw.Font.helveticaOblique();
+      final fontMono = pw.Font.courier();
       
       // Convert to PDF widgets
       final List<pw.Widget> pdfWidgets = [];

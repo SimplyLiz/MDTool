@@ -43,6 +43,7 @@ class WindowManager extends ConsumerWidget {
           ? () => ref.read(appStateProvider.notifier).closeFile()
           : null,
       onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.primary),
+      placeholder: appState.currentFile == null ? _buildPrimaryPlaceholder(context, ref) : null,
     );
 
     final layoutConfig = WindowLayoutConfig(
@@ -247,6 +248,83 @@ class WindowManager extends ConsumerWidget {
                 )
               : null,
           child: child,
+        );
+      },
+    );
+  }
+
+  Widget _buildPrimaryPlaceholder(BuildContext context, WidgetRef ref) {
+    return DragTarget<String>(
+      onAccept: (filePath) => _handlePrimaryPaneDrop(filePath, ref),
+      onWillAccept: (data) => data != null && data.isNotEmpty,
+      builder: (context, candidateData, rejectedData) {
+        return Container(
+          decoration: candidateData.isNotEmpty
+              ? BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  border: Border.all(
+                    color: Theme.of(context).primaryColor,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                )
+              : null,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  candidateData.isNotEmpty 
+                      ? Icons.file_upload 
+                      : Icons.description_outlined,
+                  size: 64,
+                  color: candidateData.isNotEmpty 
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  candidateData.isNotEmpty 
+                      ? 'Drop file to open'
+                      : 'Open a file to get started',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: candidateData.isNotEmpty 
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (candidateData.isEmpty) ...[
+                  // Open a file button
+                  SizedBox(
+                    width: 200,
+                    child: ElevatedButton.icon(
+                      onPressed: () => WindowHeaderActions.openFileDialog(ref),
+                      icon: const Icon(Icons.folder_open, size: 20),
+                      label: const Text('Open File'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Create new file button
+                  SizedBox(
+                    width: 200,
+                    child: ElevatedButton.icon(
+                      onPressed: () => WindowHeaderActions.createNewFile(ref),
+                      icon: const Icon(Icons.note_add, size: 20),
+                      label: const Text('Create New File'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         );
       },
     );

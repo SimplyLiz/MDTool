@@ -46,29 +46,23 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
-    
+
     // Initialize ScrollSyncService with preferences - moved outside build cycle
     ref.listen(preferencesProvider, (previous, next) {
       next.whenData((prefs) {
         // Check if both sync modes are enabled (legacy preferences)
         final bothEnabled = prefs.defaultScrollSyncEnabled && prefs.defaultCaretSyncEnabled;
-        
-        ScrollSyncService().initializeFromPreferences(
-          scrollSyncEnabled: prefs.defaultScrollSyncEnabled,
-          caretSyncEnabled: prefs.defaultCaretSyncEnabled,
-        );
-        
+
+        ScrollSyncService().initializeFromPreferences(scrollSyncEnabled: prefs.defaultScrollSyncEnabled, caretSyncEnabled: prefs.defaultCaretSyncEnabled);
+
         // If we corrected mutual exclusivity, update saved preferences
         if (bothEnabled) {
           Future(() async {
             final preferencesNotifier = ref.read(preferencesProvider.notifier);
-            await preferencesNotifier.updatePreferences(prefs.copyWith(
-              defaultScrollSyncEnabled: false,
-              defaultCaretSyncEnabled: true,
-            ));
+            await preferencesNotifier.updatePreferences(prefs.copyWith(defaultScrollSyncEnabled: false, defaultCaretSyncEnabled: true));
           });
         }
-        
+
         // Also update the UI state provider
         Future(() {
           final syncStateNotifier = ref.read(syncStateProvider.notifier);
@@ -76,7 +70,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         });
       });
     });
-    
+
     return Scaffold(
       appBar: const MDToolbar(),
       body: SafeArea(
@@ -85,73 +79,59 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             Expanded(
               child: Row(
                 children: [
-                // Folder Sidebar
-                FolderSidebar(
-                  isVisible: appState.isFolderSidebarVisible,
-                ),
-                
-                // Main Content Area  
-                Expanded(
-                  child: DropTarget(
-                    onDragEntered: (details) {
-                      setState(() {
-                        _isDragging = true;
-                      });
-                    },
-                    onDragExited: (details) {
-                      setState(() {
-                        _isDragging = false;
-                      });
-                    },
-                    onDragDone: (details) {
-                      setState(() {
-                        _isDragging = false;
-                      });
-                      _handleDroppedFiles(details.files);
-                    },
-                    child: DragTarget<String>(
-                      onAccept: (filePath) => _handleInternalFileDrop(filePath),
-                      onWillAccept: (data) => data != null && data.isNotEmpty,
-                      builder: (context, candidateStringData, rejectedStringData) {
-                        return Container(
-                          decoration: (_isDragging || candidateStringData.isNotEmpty)
-                              ? BoxDecoration(
-                                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                  border: Border.all(
-                                    color: Theme.of(context).primaryColor,
-                                    width: 2,
-                                    style: BorderStyle.solid,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                )
-                              : null,
-                          child: Container(
-                            padding: EdgeInsets.all(math.max(8.0, math.min(16.0, MediaQuery.of(context).size.width * 0.02))),
-                            child: appState.currentFile != null
-                                ? const WindowManager()
-                                : _buildWelcomeView(ref),
-                          ),
-                        );
+                  // Folder Sidebar
+                  FolderSidebar(isVisible: appState.isFolderSidebarVisible),
+
+                  // Main Content Area
+                  Expanded(
+                    child: DropTarget(
+                      onDragEntered: (details) {
+                        setState(() {
+                          _isDragging = true;
+                        });
                       },
+                      onDragExited: (details) {
+                        setState(() {
+                          _isDragging = false;
+                        });
+                      },
+                      onDragDone: (details) {
+                        setState(() {
+                          _isDragging = false;
+                        });
+                        _handleDroppedFiles(details.files);
+                      },
+                      child: DragTarget<String>(
+                        onAccept: (filePath) => _handleInternalFileDrop(filePath),
+                        onWillAccept: (data) => data != null && data.isNotEmpty,
+                        builder: (context, candidateStringData, rejectedStringData) {
+                          return Container(
+                            decoration: (_isDragging || candidateStringData.isNotEmpty)
+                                ? BoxDecoration(
+                                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                    border: Border.all(color: Theme.of(context).primaryColor, width: 2, style: BorderStyle.solid),
+                                    borderRadius: BorderRadius.circular(8),
+                                  )
+                                : null,
+                            child: Container(padding: EdgeInsets.all(math.max(8.0, math.min(16.0, MediaQuery.of(context).size.width * 0.02))), child: appState.currentFile != null || appState.isFolderSidebarVisible ? const WindowManager() : _buildWelcomeView(ref)),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const StatusBar(),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-            child: Text(
-              '© 2025 Tastehub GmbH',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+            const StatusBar(),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+              child: Text(
+                '© 2025 Tastehub GmbH',
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -162,42 +142,33 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     final screenSize = MediaQuery.of(context).size;
     final isVerySmallScreen = screenSize.width < 500 || screenSize.height < 400;
     final isSmallScreen = screenSize.width < 900;
-    
+
     // Use adaptive layout based on screen size
     if (isVerySmallScreen) {
       return _buildSmallScreenWelcome(ref, preferences, screenSize);
     }
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isExtremelyNarrow = constraints.maxWidth < 450;
-        
+
         return Row(
           children: [
             // Left side - Welcome message and buttons
             Expanded(
               flex: isSmallScreen ? 3 : 2,
-              child: Center(
-                child: SingleChildScrollView(
-                  child: _buildWelcomeContent(ref, screenSize),
-                ),
-              ),
+              child: Center(child: SingleChildScrollView(child: _buildWelcomeContent(ref, screenSize))),
             ),
-            
+
             // Right side - Recent items (hide when extremely narrow or dragging)
             if (!_isDragging && !isExtremelyNarrow) ...[
               Container(
                 width: 1,
                 height: math.min(constraints.maxHeight * 0.8, 400.0),
                 color: Colors.grey[300],
-                margin: EdgeInsets.symmetric(
-                  horizontal: math.max(4.0, constraints.maxWidth * 0.005),
-                ),
+                margin: EdgeInsets.symmetric(horizontal: math.max(4.0, constraints.maxWidth * 0.005)),
               ),
-              Expanded(
-                flex: isSmallScreen ? 2 : 2,
-                child: _buildRecentAndFavoritesView(ref, preferences),
-              ),
+              Expanded(flex: isSmallScreen ? 2 : 2, child: _buildRecentAndFavoritesView(ref, preferences)),
             ],
           ],
         );
@@ -207,22 +178,16 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
   Widget _buildSmallScreenWelcome(WidgetRef ref, AsyncValue<dynamic> preferences, Size screenSize) {
     final isVeryNarrow = screenSize.width < 300;
-    
+
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        horizontal: math.max(8.0, screenSize.width * 0.03),
-        vertical: 16,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: math.max(8.0, screenSize.width * 0.03), vertical: 16),
       child: Column(
         children: [
           _buildWelcomeContent(ref, screenSize),
           if (!_isDragging && !isVeryNarrow) ...[
             SizedBox(height: math.min(32.0, screenSize.height * 0.04)),
             Container(
-              constraints: BoxConstraints(
-                maxHeight: math.max(200, math.min(screenSize.height * 0.4, 300)),
-                minHeight: math.min(200, screenSize.height * 0.35),
-              ),
+              constraints: BoxConstraints(maxHeight: math.max(200, math.min(screenSize.height * 0.4, 300)), minHeight: math.min(200, screenSize.height * 0.35)),
               child: _buildRecentAndFavoritesView(ref, preferences),
             ),
           ],
@@ -230,10 +195,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
             Text(
               'Recents & Favorites available in wider view',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -247,17 +209,11 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     final titleSize = math.min(32.0, math.max(20.0, screenSize.width * 0.025));
     final subtitleSize = math.min(16.0, math.max(12.0, screenSize.width * 0.015));
     final buttonWidth = math.min(200.0, math.max(150.0, screenSize.width * 0.2));
-    
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          _isDragging ? Icons.file_upload : Icons.description_outlined,
-          size: iconSize,
-          color: _isDragging 
-              ? Theme.of(context).primaryColor 
-              : Colors.grey[400],
-        ),
+        Icon(_isDragging ? Icons.file_upload : Icons.description_outlined, size: iconSize, color: _isDragging ? Theme.of(context).primaryColor : Colors.grey[400]),
         SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
         TweenAnimationBuilder<double>(
           duration: const Duration(milliseconds: 800),
@@ -269,11 +225,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                 opacity: value,
                 child: Text(
                   'MD Tool',
-                  style: TextStyle(
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.w300,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.w300, color: Colors.grey[600]),
                 ),
               ),
             );
@@ -283,15 +235,8 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         Padding(
           padding: EdgeInsets.symmetric(horizontal: math.max(16.0, screenSize.width * 0.05)),
           child: Text(
-            _isDragging 
-                ? 'Drop your Markdown file or folder here'
-                : 'Open a Markdown file or folder to get started',
-            style: TextStyle(
-              fontSize: subtitleSize,
-              color: _isDragging 
-                  ? Theme.of(context).primaryColor 
-                  : Colors.grey[600],
-            ),
+            _isDragging ? 'Drop your Markdown file or folder here' : 'Open a Markdown file or folder to get started',
+            style: TextStyle(fontSize: subtitleSize, color: _isDragging ? Theme.of(context).primaryColor : Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ),
@@ -303,28 +248,17 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             children: [
               SizedBox(
                 width: buttonWidth,
-                child: ElevatedButton(
-                  onPressed: () => _openFileDialog(ref),
-                  child: const Text('Open File'),
-                ),
+                child: ElevatedButton(onPressed: () => _openFileDialog(ref), child: const Text('Open File')),
               ),
               SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
               SizedBox(
                 width: buttonWidth,
-                child: ElevatedButton.icon(
-                  onPressed: () => _openFolderDialog(ref),
-                  icon: const Icon(Icons.folder_open, size: 18),
-                  label: const Text('Open Folder'),
-                ),
+                child: ElevatedButton.icon(onPressed: () => _openFolderDialog(ref), icon: const Icon(Icons.folder_open, size: 18), label: const Text('Open Folder')),
               ),
               SizedBox(height: math.min(16.0, screenSize.height * 0.02)),
               SizedBox(
                 width: buttonWidth,
-                child: OutlinedButton.icon(
-                  onPressed: () => WindowHeaderActions.openChatWithoutFile(context),
-                  icon: const Icon(Icons.chat, size: 18),
-                  label: const Text('Chat'),
-                ),
+                child: OutlinedButton.icon(onPressed: () => WindowHeaderActions.openChatWithoutFile(context), icon: const Icon(Icons.chat, size: 18), label: const Text('Chat')),
               ),
             ],
           ),
@@ -333,10 +267,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             padding: EdgeInsets.symmetric(horizontal: math.max(16.0, screenSize.width * 0.05)),
             child: Text(
               'or drag and drop a .md file or folder',
-              style: TextStyle(
-                fontSize: math.max(12.0, subtitleSize * 0.875),
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: math.max(12.0, subtitleSize * 0.875), color: Colors.grey[500]),
               textAlign: TextAlign.center,
             ),
           ),
@@ -360,154 +291,95 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor.withOpacity(0.3),
-                      width: 1,
-                    ),
+                    border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.3), width: 1),
                   ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _tabController.animateTo(0),
-                      child: AnimatedBuilder(
-                        animation: _tabController,
-                        builder: (context, child) {
-                          final isSelected = _tabController.index == 0;
-                          return Container(
-                            padding: EdgeInsets.symmetric(
-                              vertical: 8, 
-                              horizontal: isCompact ? 8 : 16
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected 
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
-                                : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ]
-                                : null,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.history,
-                                  size: isCompact ? 16 : 18,
-                                  color: isSelected 
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                                if (!isCompact || constraints.maxWidth > 200) ...[
-                                  SizedBox(width: isCompact ? 4 : 6),
-                                  Flexible(
-                                    child: Text(
-                                      'Recent',
-                                      style: TextStyle(
-                                        fontSize: isCompact ? 12 : 14,
-                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                        color: isSelected 
-                                          ? Theme.of(context).colorScheme.onPrimary
-                                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _tabController.animateTo(1),
-                      child: AnimatedBuilder(
-                        animation: _tabController,
-                        builder: (context, child) {
-                          final isSelected = _tabController.index == 1;
-                          return Container(
-                            padding: EdgeInsets.symmetric(
-                              vertical: 8, 
-                              horizontal: isCompact ? 8 : 16
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected 
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
-                                : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ]
-                                : null,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  size: isCompact ? 16 : 18,
-                                  color: isSelected 
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                                if (!isCompact || constraints.maxWidth > 200) ...[
-                                  SizedBox(width: isCompact ? 4 : 6),
-                                  Flexible(
-                                    child: Text(
-                                      'Favorites',
-                                      style: TextStyle(
-                                        fontSize: isCompact ? 12 : 14,
-                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                        color: isSelected 
-                                          ? Theme.of(context).colorScheme.onPrimary
-                                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Tab view
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, tabConstraints) {
-                  return TabBarView(
-                    controller: _tabController,
+                  child: Row(
                     children: [
-                      _buildRecentItemsList(ref, preferences, tabConstraints),
-                      _buildFavoriteItemsList(ref, preferences, tabConstraints),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _tabController.animateTo(0),
+                          child: AnimatedBuilder(
+                            animation: _tabController,
+                            builder: (context, child) {
+                              final isSelected = _tabController.index == 0;
+                              return Container(
+                                padding: EdgeInsets.symmetric(vertical: 8, horizontal: isCompact ? 8 : 16),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.9) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 1))] : null,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.history, size: isCompact ? 16 : 18, color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant),
+                                    if (!isCompact || constraints.maxWidth > 200) ...[
+                                      SizedBox(width: isCompact ? 4 : 6),
+                                      Flexible(
+                                        child: Text(
+                                          'Recent',
+                                          style: TextStyle(fontSize: isCompact ? 12 : 14, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _tabController.animateTo(1),
+                          child: AnimatedBuilder(
+                            animation: _tabController,
+                            builder: (context, child) {
+                              final isSelected = _tabController.index == 1;
+                              return Container(
+                                padding: EdgeInsets.symmetric(vertical: 8, horizontal: isCompact ? 8 : 16),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.9) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 1))] : null,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.star, size: isCompact ? 16 : 18, color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant),
+                                    if (!isCompact || constraints.maxWidth > 200) ...[
+                                      SizedBox(width: isCompact ? 4 : 6),
+                                      Flexible(
+                                        child: Text(
+                                          'Favorites',
+                                          style: TextStyle(fontSize: isCompact ? 12 : 14, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     ],
-                  );
-                },
-              ),
-            ),
-          ],
-        );
+                  ),
+                ),
+                // Tab view
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, tabConstraints) {
+                      return TabBarView(controller: _tabController, children: [_buildRecentItemsList(ref, preferences, tabConstraints), _buildFavoriteItemsList(ref, preferences, tabConstraints)]);
+                    },
+                  ),
+                ),
+              ],
+            );
           },
         );
       },
@@ -527,7 +399,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
   Widget _buildRecentItemsList(WidgetRef ref, dynamic preferences, [BoxConstraints? constraints]) {
     final recentItems = preferences.recentItems as List<RecentItem>;
-    
+
     if (recentItems.isEmpty) {
       return Center(
         child: Column(
@@ -537,19 +409,12 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             const SizedBox(height: 16),
             Text(
               'No Recent Items',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             Text(
               'Open files and folders to see them here',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -568,11 +433,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
               const SizedBox(width: 8),
               Text(
                 'Recent',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.grey[700]),
               ),
               const Spacer(),
               if (recentItems.isNotEmpty)
@@ -600,7 +461,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
   Widget _buildFavoriteItemsList(WidgetRef ref, dynamic preferences, [BoxConstraints? constraints]) {
     final favoriteItems = preferences.favoriteItems as List<FavoriteItem>;
-    
+
     if (favoriteItems.isEmpty) {
       return Center(
         child: Column(
@@ -610,19 +471,12 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             const SizedBox(height: 16),
             Text(
               'No Favorites',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             Text(
               'Bookmark files and folders to see them here',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -641,11 +495,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
               const SizedBox(width: 8),
               Text(
                 'Favorites',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.grey[700]),
               ),
               const Spacer(),
               if (favoriteItems.isNotEmpty)
@@ -676,12 +526,9 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     final icon = isFile ? Icons.description : Icons.folder;
     final subtitle = isFile ? 'File' : 'Folder';
     final isCompact = constraints != null && constraints.maxWidth < 300;
-    
+
     return Card(
-      margin: EdgeInsets.symmetric(
-        horizontal: isCompact ? 8 : 16, 
-        vertical: isCompact ? 2 : 4
-      ),
+      margin: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 16, vertical: isCompact ? 2 : 4),
       child: ListTile(
         leading: Icon(icon, color: isFile ? Colors.blue[600] : Colors.amber[700]),
         title: Text(
@@ -693,24 +540,15 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         subtitle: Row(
           children: [
             Flexible(
-              child: Text(
-                subtitle,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              child: Text(subtitle, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
             ),
             const SizedBox(width: 4),
-            Text(
-              '•',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text('•', style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
                 _formatDate(item.lastAccessed),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -723,14 +561,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
               iconSize: 16,
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               padding: const EdgeInsets.all(4),
-              icon: Icon(
-                ref.watch(preferencesProvider.notifier).isFavorite(item.path) 
-                  ? Icons.star 
-                  : Icons.star_outline,
-                color: ref.watch(preferencesProvider.notifier).isFavorite(item.path) 
-                  ? Colors.amber[700] 
-                  : Colors.grey[600],
-              ),
+              icon: Icon(ref.watch(preferencesProvider.notifier).isFavorite(item.path) ? Icons.star : Icons.star_outline, color: ref.watch(preferencesProvider.notifier).isFavorite(item.path) ? Colors.amber[700] : Colors.grey[600]),
               onPressed: () => _toggleFavorite(ref, item.path, item.type == RecentItemType.file ? FavoriteItemType.file : FavoriteItemType.folder),
               tooltip: ref.watch(preferencesProvider.notifier).isFavorite(item.path) ? 'Remove from favorites' : 'Add to favorites',
             ),
@@ -754,12 +585,9 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     final icon = isFile ? Icons.description : Icons.folder;
     final subtitle = isFile ? 'File' : 'Folder';
     final isCompact = constraints != null && constraints.maxWidth < 300;
-    
+
     return Card(
-      margin: EdgeInsets.symmetric(
-        horizontal: isCompact ? 8 : 16, 
-        vertical: isCompact ? 2 : 4
-      ),
+      margin: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 16, vertical: isCompact ? 2 : 4),
       child: ListTile(
         leading: Icon(icon, color: isFile ? Colors.blue[600] : Colors.amber[700]),
         title: Text(
@@ -771,24 +599,15 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         subtitle: Row(
           children: [
             Flexible(
-              child: Text(
-                subtitle,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              child: Text(subtitle, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
             ),
             const SizedBox(width: 4),
-            Text(
-              '•',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text('•', style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
                 _formatDate(item.dateAdded),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -815,7 +634,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays > 7) {
       return '${date.day}/${date.month}/${date.year}';
     } else if (difference.inDays > 0) {
@@ -834,10 +653,10 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
     final droppedItem = files.first;
     final itemPath = droppedItem.path;
-    
+
     // Only handle files, not directories
     final file = File(itemPath);
-    
+
     try {
       if (await file.exists()) {
         // Handle dropped file
@@ -859,9 +678,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       ref.read(appStateProvider.notifier).openFile(filePath, content);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to open file: $e'))
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to open file: $e')));
       }
     }
   }
@@ -881,13 +698,9 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     }
   }
 
-
   void _openFileDialog(WidgetRef ref) async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn'],
-      );
+      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn']);
 
       if (result != null && result.files.single.path != null) {
         final filePath = result.files.single.path!;
@@ -908,7 +721,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       // If sidebar not visible, show it first
       if (!appState.isFolderSidebarVisible) {
         appStateNotifier.toggleFolderSidebar();
-        
+
         // Wait a bit for the sidebar to appear before triggering folder picker
         await Future.delayed(const Duration(milliseconds: 100));
       }
@@ -916,7 +729,6 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       // Request the sidebar to open its folder picker
       // This will use the proper DirectoryPermissionsService with security bookmarks
       appStateNotifier.requestFolderPicker();
-
     } catch (e) {
       _showErrorDialog('Failed to open folder: $e');
     }
@@ -924,12 +736,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
   void _saveFileDialog(WidgetRef ref) async {
     try {
-      String? outputFile = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Markdown File',
-        fileName: 'document.md',
-        type: FileType.custom,
-        allowedExtensions: ['md', 'markdown'],
-      );
+      String? outputFile = await FilePicker.platform.saveFile(dialogTitle: 'Save Markdown File', fileName: 'document.md', type: FileType.custom, allowedExtensions: ['md', 'markdown']);
 
       if (outputFile != null) {
         final appState = ref.read(appStateProvider);
@@ -946,10 +753,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
   void _openSecondaryFileDialog(WidgetRef ref) async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn'],
-      );
+      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn']);
 
       if (result != null && result.files.single.path != null) {
         final filePath = result.files.single.path!;
@@ -962,7 +766,6 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     }
   }
 
-
   void _showQuickLookForCurrentFile(WidgetRef ref) async {
     final appState = ref.read(appStateProvider);
     if (appState.currentFile != null) {
@@ -970,19 +773,13 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     }
   }
 
-
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Error'),
         content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
+        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))],
       ),
     );
   }
@@ -996,13 +793,10 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         title: Text('$itemType Not Found'),
         content: Text(
           'The ${itemType.toLowerCase()} "${item.name}" no longer exists or has been moved.\n\n'
-          'Would you like to remove it from your recent items?'
+          'Would you like to remove it from your recent items?',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Keep'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Keep')),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
@@ -1024,13 +818,10 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         title: Text('$itemType Not Found'),
         content: Text(
           'The ${itemType.toLowerCase()} "${item.name}" no longer exists or has been moved.\n\n'
-          'Would you like to remove it from your favorites?'
+          'Would you like to remove it from your favorites?',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Keep'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Keep')),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
@@ -1053,15 +844,11 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       ref.read(appStateProvider.notifier).saveFile();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File saved successfully')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File saved successfully')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save file: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save file: $e')));
       }
     }
   }
@@ -1076,15 +863,11 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       ref.read(appStateProvider.notifier).saveSecondaryFile();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Secondary file saved successfully')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Secondary file saved successfully')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save secondary file: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save secondary file: $e')));
       }
     }
   }
@@ -1100,10 +883,10 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         }
 
         final dirService = await DirectoryPermissionsService.getInstance();
-        
+
         // First check if we can access the file using existing bookmarks
         final canAccess = await dirService.canAccessFile(item.path);
-        
+
         if (canAccess) {
           // We have access, try to read the file
           try {
@@ -1115,42 +898,34 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             print('Failed to read file even with bookmark access: $e');
           }
         }
-        
+
         // If we don't have access or reading failed, request permission
         final parentDir = path.dirname(item.path);
-        
+
         if (!mounted) return;
-        
+
         final result = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('File Access Required'),
-            content: Text(
-              'To access "${path.basename(item.path)}", please grant permission to its parent folder:\n\n${path.basename(parentDir)}'
-            ),
+            content: Text('To access "${path.basename(item.path)}", please grant permission to its parent folder:\n\n${path.basename(parentDir)}'),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Grant Access'),
-              ),
+              TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Grant Access')),
             ],
           ),
         );
-        
+
         if (result != true) return;
-        
+
         // Request directory access
         final accessGranted = await dirService.requestAccessToDirectory(parentDir);
-        
+
         if (!accessGranted) {
           _showErrorDialog('Access not granted. Unable to open the file.');
           return;
         }
-        
+
         // Try opening the file again with the new access
         try {
           final fileService = FileService();
@@ -1170,39 +945,31 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
         // Check folder permissions similar to file handling
         final dirService = await DirectoryPermissionsService.getInstance();
-        
+
         // First check if we can access the folder using existing bookmarks
         final canAccess = await dirService.canAccessDirectory(item.path);
-        
+
         if (!canAccess) {
           // Request folder permission
           if (!mounted) return;
-          
+
           final result = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('Folder Access Required'),
-              content: Text(
-                'To access the folder "${path.basename(item.path)}", please grant permission.'
-              ),
+              content: Text('To access the folder "${path.basename(item.path)}", please grant permission.'),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Grant Access'),
-                ),
+                TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+                TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Grant Access')),
               ],
             ),
           );
-          
+
           if (result != true) return;
-          
+
           // Request directory access
           final accessGranted = await dirService.requestAccessToDirectory(item.path);
-          
+
           if (!accessGranted) {
             _showErrorDialog('Access not granted. Unable to open the folder.');
             return;
@@ -1214,25 +981,20 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         if (!appState.isFolderSidebarVisible) {
           ref.read(appStateProvider.notifier).toggleFolderSidebar();
         }
-        
+
         // Wait a moment for sidebar to appear, then trigger folder scanning
         await Future.delayed(const Duration(milliseconds: 200));
-        
+
         // Use the existing dropped folder mechanism to automatically scan the folder
         ref.read(appStateProvider.notifier).setDroppedFolder(item.path);
-        
+
         // Add to recent folders
         if (item.path.trim().isNotEmpty) {
           ref.read(appStateProvider.notifier).addRecentFolder(item.path);
         }
-        
+
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening folder: ${item.name}'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening folder: ${item.name}'), duration: const Duration(seconds: 2)));
       }
     } catch (e) {
       _showErrorDialog('Failed to open ${item.name}: $e');
@@ -1252,10 +1014,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         title: const Text('Clear Recent Items'),
         content: const Text('Are you sure you want to clear all recent items?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
               ref.read(preferencesProvider.notifier).clearRecentItems();
@@ -1286,10 +1045,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         title: const Text('Clear Favorites'),
         content: const Text('Are you sure you want to clear all favorites?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
               ref.read(preferencesProvider.notifier).clearFavoriteItems();
@@ -1314,10 +1070,10 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
         // Use the same permission handling as recent files
         final dirService = await DirectoryPermissionsService.getInstance();
-        
+
         // First check if we can access the file using existing bookmarks
         final canAccess = await dirService.canAccessFile(item.path);
-        
+
         if (canAccess) {
           // We have access, try to read the file
           try {
@@ -1329,42 +1085,34 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
             print('Failed to read favorite file even with bookmark access: $e');
           }
         }
-        
+
         // If we don't have access or reading failed, request permission
         final parentDir = path.dirname(item.path);
-        
+
         if (!mounted) return;
-        
+
         final result = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('File Access Required'),
-            content: Text(
-              'To access "${path.basename(item.path)}", please grant permission to its parent folder:\n\n${path.basename(parentDir)}'
-            ),
+            content: Text('To access "${path.basename(item.path)}", please grant permission to its parent folder:\n\n${path.basename(parentDir)}'),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Grant Access'),
-              ),
+              TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Grant Access')),
             ],
           ),
         );
-        
+
         if (result != true) return;
-        
+
         // Request directory access
         final accessGranted = await dirService.requestAccessToDirectory(parentDir);
-        
+
         if (!accessGranted) {
           _showErrorDialog('Access not granted. Unable to open the file.');
           return;
         }
-        
+
         // Try opening the file again with the new access
         try {
           final fileService = FileService();
@@ -1384,39 +1132,31 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
 
         // Check folder permissions similar to file handling
         final dirService = await DirectoryPermissionsService.getInstance();
-        
+
         // First check if we can access the folder using existing bookmarks
         final canAccess = await dirService.canAccessDirectory(item.path);
-        
+
         if (!canAccess) {
           // Request folder permission
           if (!mounted) return;
-          
+
           final result = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('Folder Access Required'),
-              content: Text(
-                'To access the folder "${path.basename(item.path)}", please grant permission.'
-              ),
+              content: Text('To access the folder "${path.basename(item.path)}", please grant permission.'),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Grant Access'),
-                ),
+                TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+                TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Grant Access')),
               ],
             ),
           );
-          
+
           if (result != true) return;
-          
+
           // Request directory access
           final accessGranted = await dirService.requestAccessToDirectory(item.path);
-          
+
           if (!accessGranted) {
             _showErrorDialog('Access not granted. Unable to open the folder.');
             return;
@@ -1428,25 +1168,20 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         if (!appState.isFolderSidebarVisible) {
           ref.read(appStateProvider.notifier).toggleFolderSidebar();
         }
-        
+
         // Wait a moment for sidebar to appear, then trigger folder scanning
         await Future.delayed(const Duration(milliseconds: 200));
-        
+
         // Use the existing dropped folder mechanism to automatically scan the folder
         ref.read(appStateProvider.notifier).setDroppedFolder(item.path);
-        
+
         // Add to recent folders
         if (item.path.trim().isNotEmpty) {
           ref.read(appStateProvider.notifier).addRecentFolder(item.path);
         }
-        
+
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening folder: ${item.name}'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening folder: ${item.name}'), duration: const Duration(seconds: 2)));
       }
     } catch (e) {
       _showErrorDialog('Failed to open ${item.name}: $e');

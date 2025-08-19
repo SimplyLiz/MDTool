@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../graph_renderer.dart';
 import 'dart:convert';
-import 'dart:math' as math;
 
 /// Mermaid graph renderer using WebView
 class MermaidRenderer extends GraphRenderer {
@@ -117,214 +117,6 @@ class MermaidRenderer extends GraphRenderer {
         : GraphValidationResult.valid();
   }
   
-  String _generateMermaidHTML(String content, String theme, GraphRenderOptions? options) {
-    final bgColor = options?.backgroundColorCss ?? 'transparent';
-    
-    final mermaidConfig = {
-      'startOnLoad': false,
-      'theme': 'base',
-      'themeVariables': theme == 'dark' ? {
-        'primaryColor': '#bb86fc',
-        'primaryTextColor': '#ffffff',
-        'primaryBorderColor': '#03dac6',
-        'lineColor': '#ffffff',
-        'secondaryColor': '#03dac6',
-        'tertiaryColor': '#1f1f1f',
-        'background': bgColor,
-        'mainBkg': bgColor,
-        'secondBkg': bgColor,
-        'tertiaryBkg': bgColor,
-        'edgeLabelBackground': bgColor,
-      } : {
-        'primaryColor': '#6366f1',
-        'primaryTextColor': '#ffffff',
-        'primaryBorderColor': '#4f46e5',
-        'lineColor': '#374151',
-        'secondaryColor': '#10b981',
-        'tertiaryColor': '#f3f4f6',
-        'background': bgColor,
-        'mainBkg': bgColor,
-        'secondBkg': bgColor,
-        'tertiaryBkg': bgColor,
-        'edgeLabelBackground': bgColor,
-      },
-      'flowchart': {
-        'htmlLabels': true,
-        'useMaxWidth': false,
-      },
-      'sequence': {
-        'diagramMarginX': 50,
-        'diagramMarginY': 10,
-        'actorMargin': 50,
-        'width': 150,
-        'height': 65,
-        'boxMargin': 10,
-        'boxTextMargin': 5,
-        'noteMargin': 10,
-        'messageMargin': 35,
-        'mirrorActors': true,
-        'bottomMarginAdj': 1,
-        'useMaxWidth': false,
-      },
-      'gantt': {
-        'useMaxWidth': false,
-      },
-    };
-    
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            margin: 0;
-            padding: 16px;
-            background: $bgColor;
-            color: ${theme == 'dark' ? '#ffffff' : '#000000'};
-            overflow: hidden;
-            min-height: 200px;
-            height: auto;
-        }
-        
-        #mermaid-container {
-            width: 100%;
-            max-width: 100vw;
-            overflow-x: auto;
-            overflow-y: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 0;
-        }
-        
-        #mermaid-graph {
-            width: auto;
-            min-width: 100%;
-            height: auto;
-        }
-        
-        /* Force responsive scaling with proper overrides */
-        #mermaid-graph svg {
-            max-width: none !important;
-            width: 100% !important;
-            height: auto !important;
-            display: block;
-        }
-        
-        /* Ensure text remains readable */
-        #mermaid-graph svg text {
-            font-size: 14px !important;
-        }
-        
-        /* Custom styling for better integration */
-        .node rect,
-        .node circle,
-        .node ellipse,
-        .node polygon {
-            stroke-width: 2px;
-        }
-        
-        .edgePath .path {
-            stroke-width: 2px;
-        }
-        
-        .error-message {
-            color: #ef4444;
-            background: ${theme == 'dark' ? '#1f1f1f' : '#fef2f2'};
-            border: 1px solid #ef4444;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 16px;
-            font-family: monospace;
-        }
-    </style>
-</head>
-<body>
-    <div id="mermaid-container">
-        <div id="mermaid-graph">
-            Loading diagram...
-        </div>
-    </div>
-    
-    <script src="https://unpkg.com/mermaid@10.9.1/dist/mermaid.min.js"></script>
-    <script>
-        // Wait for Mermaid to be available and initialize it
-        function initializeMermaid() {
-            try {
-                if (typeof mermaid === 'undefined') {
-                    showError('Mermaid library failed to load');
-                    return;
-                }
-                
-                mermaid.initialize(${jsonEncode(mermaidConfig)});
-            } catch (error) {
-                showError('Failed to initialize Mermaid: ' + error.message);
-            }
-        }
-        
-        // Initialize when the page loads
-        if (typeof mermaid !== 'undefined') {
-            initializeMermaid();
-        } else {
-            // Wait a bit for the script to load
-            setTimeout(initializeMermaid, 100);
-        }
-        
-        async function renderMermaid(content) {
-            try {
-                const container = document.getElementById('mermaid-graph');
-                
-                // Use the modern mermaid.render API for better control
-                const { svg } = await mermaid.render('mermaid-diagram', content);
-                container.innerHTML = svg;
-                
-                // Apply responsive fixes after render
-                setTimeout(() => {
-                    const svgElement = container.querySelector('svg');
-                    if (svgElement) {
-                        // Remove fixed dimensions and max-width constraints
-                        svgElement.removeAttribute('width');
-                        svgElement.removeAttribute('height');
-                        svgElement.style.maxWidth = 'none';
-                        svgElement.style.width = '100%';
-                        svgElement.style.height = 'auto';
-                        
-                        // Calculate actual content height and adjust body
-                        const svgBounds = svgElement.getBoundingClientRect();
-                        const contentHeight = svgBounds.height + 32; // Add padding
-                        const minHeight = Math.max(200, contentHeight);
-                        
-                        document.body.style.height = minHeight + 'px';
-                        document.documentElement.style.height = minHeight + 'px';
-                    }
-                }, 100);
-            } catch (error) {
-                showError('Failed to render diagram: ' + error.message);
-            }
-        }
-        
-        function showError(message) {
-            const container = document.getElementById('mermaid-graph');
-            container.innerHTML = '<div class="error-message">' + message + '</div>';
-        }
-        
-        // Make renderMermaid available globally for WebView
-        window.renderMermaid = renderMermaid;
-    </script>
-</body>
-</html>
-    ''';
-  }
-  
-  String _escapeContent(String content) {
-    return content
-        .replaceAll('`', '\\`')
-        .replaceAll('\$', '\\\$')
-        .replaceAll('\\', '\\\\');
-  }
 }
 
 class _MermaidWebView extends StatefulWidget {
@@ -354,7 +146,7 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
 
   void _initializeWebView() async {
     controller = WebViewController();
-    final html = _generateMermaidHTML(widget.content, widget.theme, widget.options);
+    final html = await _generateMermaidHTML(widget.content, widget.theme, widget.options);
     
     await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
     
@@ -374,8 +166,8 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
     await controller.setNavigationDelegate(
       NavigationDelegate(
         onPageFinished: (url) {
-          // Wait for Mermaid.js to be fully loaded and initialized
-          Future.delayed(const Duration(milliseconds: 800), () {
+          // Minimal delay for DOM readiness
+          Future.delayed(const Duration(milliseconds: 100), () {
             final escapedContent = _escapeContent(widget.content);
             controller.runJavaScript('''
               if (window.renderMermaid) {
@@ -390,12 +182,25 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
     await controller.loadHtmlString(html);
   }
 
-  String _generateMermaidHTML(String content, String theme, GraphRenderOptions? options) {
+  Future<String> _generateMermaidHTML(String content, String theme, GraphRenderOptions? options) async {
     final bgColor = options?.backgroundColorCss ?? 'transparent';
+    
+    // Load mermaid.js content from assets
+    String mermaidJS;
+    try {
+      mermaidJS = await rootBundle.loadString('assets/js/mermaid.min.js');
+    } catch (e) {
+      // Fallback to CDN if asset loading fails
+      debugPrint('Failed to load local mermaid.js, falling back to CDN: $e');
+      mermaidJS = '';
+    }
     
     final mermaidConfig = {
       'startOnLoad': false,
       'theme': 'base',
+      'securityLevel': 'loose',
+      'suppressErrorRendering': true,
+      'maxEdges': 500,
       'themeVariables': theme == 'dark' ? {
         'primaryColor': '#bb86fc',
         'primaryTextColor': '#ffffff',
@@ -424,6 +229,7 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
       'flowchart': {
         'htmlLabels': true,
         'useMaxWidth': false,
+        'curve': 'linear',
       },
       'sequence': {
         'diagramMarginX': 50,
@@ -522,7 +328,7 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
         </div>
     </div>
     
-    <script src="https://unpkg.com/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    ${mermaidJS.isNotEmpty ? '<script>$mermaidJS</script>' : '<script src="https://unpkg.com/mermaid@10.9.1/dist/mermaid.min.js"></script>'}
     <script>
         // Wait for Mermaid to be available and initialize it
         function initializeMermaid() {
@@ -538,12 +344,12 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
             }
         }
         
-        // Initialize when the page loads
+        // Initialize immediately when available
         if (typeof mermaid !== 'undefined') {
             initializeMermaid();
         } else {
-            // Wait a bit for the script to load
-            setTimeout(initializeMermaid, 100);
+            // Use proper event listener instead of timeout
+            document.addEventListener('DOMContentLoaded', initializeMermaid);
         }
         
         async function renderMermaid(content) {
@@ -554,8 +360,8 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
                 const { svg } = await mermaid.render('mermaid-diagram', content);
                 container.innerHTML = svg;
                 
-                // Apply responsive fixes after render
-                setTimeout(() => {
+                // Apply responsive fixes immediately after render
+                requestAnimationFrame(() => {
                     const svgElement = container.querySelector('svg');
                     if (svgElement) {
                         // Remove fixed dimensions and max-width constraints
@@ -575,7 +381,7 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
                             window.HeightChannel.postMessage(minHeight.toString());
                         }
                     }
-                }, 100);
+                });
             } catch (error) {
                 showError('Failed to render diagram: ' + error.message);
             }

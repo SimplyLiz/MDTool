@@ -573,7 +573,7 @@ $html
       styleSheet: _buildStyleSheet(context, preferences),
       extensionSet: md.ExtensionSet([...md.ExtensionSet.gitHubFlavored.blockSyntaxes, md.TableSyntax()], [md.EmojiSyntax(), ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes]),
       builders: {
-        'code': FencedCodeBlockBuilder(isDarkTheme: Theme.of(context).brightness == Brightness.dark),
+        'code': FencedCodeBlockBuilder(context: context),
         'img': ImageElementBuilder(),
       },
       onTapLink: (text, href, title) {
@@ -602,7 +602,7 @@ $html
       a: TextStyle(color: colorScheme.primary, decoration: TextDecoration.underline, fontFamily: preferences.fontFamily),
 
       // Code
-      code: TextStyle(color: colorScheme.onSurface, backgroundColor: colorScheme.surfaceVariant, fontFamily: 'Monaco', fontSize: preferences.fontSize * 0.9),
+      code: TextStyle(color: colorScheme.onSurface, backgroundColor: colorScheme.surfaceContainerHighest, fontFamily: 'Monaco', fontSize: preferences.fontSize * 0.9),
       codeblockDecoration: const BoxDecoration(color: Colors.transparent),
       codeblockPadding: const EdgeInsets.all(12),
 
@@ -610,7 +610,7 @@ $html
       listBullet: TextStyle(color: colorScheme.onSurface, fontFamily: preferences.fontFamily),
 
       // Blockquotes
-      blockquote: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontStyle: FontStyle.italic, fontFamily: preferences.fontFamily, fontSize: preferences.fontSize),
+      blockquote: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8), fontStyle: FontStyle.italic, fontFamily: preferences.fontFamily, fontSize: preferences.fontSize),
       blockquoteDecoration: BoxDecoration(
         border: Border(left: BorderSide(color: colorScheme.primary, width: 4)),
       ),
@@ -620,13 +620,13 @@ $html
       tableHead: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold, fontFamily: preferences.fontFamily, fontSize: preferences.fontSize),
       tableBody: TextStyle(color: colorScheme.onSurface, fontFamily: preferences.fontFamily, fontSize: preferences.fontSize),
       tableHeadAlign: TextAlign.left,
-      tableBorder: TableBorder.all(color: colorScheme.outline.withOpacity(0.3), width: 1),
+      tableBorder: TableBorder.all(color: colorScheme.outline.withValues(alpha: 0.3), width: 1),
       tableColumnWidth: const FlexColumnWidth(),
       tableCellsPadding: const EdgeInsets.all(8),
 
       // Horizontal rules
       horizontalRuleDecoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colorScheme.outline.withOpacity(0.3), width: 1)),
+        border: Border(top: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3), width: 1)),
       ),
     );
   }

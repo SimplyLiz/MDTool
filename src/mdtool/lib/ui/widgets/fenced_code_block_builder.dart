@@ -7,34 +7,42 @@ import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/github.dart' as gh_theme;
 
 class FencedCodeBlockBuilder extends MarkdownElementBuilder {
-  final bool isDarkTheme;
+  final BuildContext context;
 
-  FencedCodeBlockBuilder({required this.isDarkTheme});
+  FencedCodeBlockBuilder({required this.context});
 
   @override
   Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    // We only handle <code> elements that have a language class
+    // We handle <code> elements (both with and without language classes)
     if (element.tag != 'code') return null;
     
     final classAttr = element.attributes['class'] ?? '';
-    if (!classAttr.startsWith('language-')) return null;
+    // Handle both language-specific and plain code blocks
+    final hasLanguage = classAttr.startsWith('language-');
+    
+    // We can assume this is a fenced code block if we reach here
+    // (inline code is handled differently by flutter_markdown)
     
     // Safety check for empty or invalid content
     final rawCode = element.textContent;
     if (rawCode.trim().isEmpty) return null;
 
     // language comes from the "class" attribute: e.g. "language-dart"
-    final lang = classAttr.startsWith('language-')
+    final lang = hasLanguage
         ? classAttr.substring('language-'.length)
-        : ''; // empty -> auto
+        : ''; // empty -> no syntax highlighting
 
     final normalizedLang = _normalizeLanguage(lang);
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDarkTheme = theme.brightness == Brightness.dark;
+    
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: isDarkTheme ? const Color(0xFF1E1E1E) : const Color(0xFFF8F8F8),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -45,7 +53,7 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: isDarkTheme ? const Color(0xFF2D2D2D) : const Color(0xFFE8E8E8),
+              color: colorScheme.surfaceContainer,
               borderRadius: normalizedLang.isNotEmpty
                   ? const BorderRadius.only(
                       topLeft: Radius.circular(8),
@@ -61,16 +69,16 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isDarkTheme ? Colors.white70 : Colors.black87,
+                      color: colorScheme.onSurface,
                       fontFamily: 'Monaco',
                     ),
                   ),
-                  const Spacer(),
                 ],
+                const Spacer(),
                 // Copy button
                 _CopyButton(
                   code: rawCode,
-                  isDarkTheme: isDarkTheme,
+                  context: context,
                 ),
               ],
             ),
@@ -82,7 +90,7 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
               width: double.infinity,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: _buildHighlightedCode(rawCode, normalizedLang),
+                child: _buildHighlightedCode(rawCode, normalizedLang, isDarkTheme),
               ),
             ),
           ),
@@ -112,14 +120,15 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
   }
 
 
-  Widget _buildHighlightedCode(String code, String language) {
+  Widget _buildHighlightedCode(String code, String language, bool isDarkTheme) {
     // Use async highlighting for large code blocks (>1000 characters or >50 lines)
     final isLargeCodeBlock = code.length > 1000 || code.split('\n').length > 50;
     
     if (isLargeCodeBlock) {
       return FutureBuilder<Widget>(
-        future: _computeHighlighting(code, language),
+        future: _computeHighlighting(code, language, isDarkTheme),
         builder: (context, snapshot) {
+          final loadingColorScheme = Theme.of(context).colorScheme;
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Container(
               padding: const EdgeInsets.all(16),
@@ -130,7 +139,7 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: isDarkTheme ? Colors.white70 : Colors.black54,
+                      color: loadingColorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -139,7 +148,7 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
                     style: TextStyle(
                       fontFamily: 'Monaco',
                       fontSize: 13,
-                      color: isDarkTheme ? Colors.white70 : Colors.black54,
+                      color: loadingColorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -156,20 +165,32 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
       );
     } else {
       // Use synchronous highlighting for smaller code blocks
-      return HighlightView(
-        code,
-        language: language.isEmpty ? null : language,
-        theme: isDarkTheme ? _customDarkTheme() : gh_theme.githubTheme,
-        tabSize: 2,
-        textStyle: const TextStyle(
-          fontFamily: 'Monaco',
-          fontSize: 13,
-        ),
-      );
+      if (language.isEmpty) {
+        // For plain code blocks, use Text widget without syntax highlighting
+        return Text(
+          code,
+          style: TextStyle(
+            fontFamily: 'Monaco',
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        );
+      } else {
+        return HighlightView(
+          code,
+          language: language,
+          theme: isDarkTheme ? _customDarkTheme() : gh_theme.githubTheme,
+          tabSize: 2,
+          textStyle: const TextStyle(
+            fontFamily: 'Monaco',
+            fontSize: 13,
+          ),
+        );
+      }
     }
   }
 
-  Future<Widget> _computeHighlighting(String code, String language) async {
+  Future<Widget> _computeHighlighting(String code, String language, bool isDarkTheme) async {
     return await compute(_highlightInBackground, {
       'code': code,
       'language': language,
@@ -178,12 +199,13 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
   }
 
   Widget _buildFallbackText(String code) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Text(
       code,
       style: TextStyle(
         fontFamily: 'Monaco',
         fontSize: 13,
-        color: isDarkTheme ? Colors.white : Colors.black,
+        color: colorScheme.onSurface,
       ),
     );
   }
@@ -269,12 +291,24 @@ Widget _highlightInBackground(Map<String, dynamic> params) {
   final String language = params['language'];
   final bool isDarkTheme = params['isDarkTheme'];
   
+  if (language.isEmpty) {
+    // For plain code blocks, use Text widget without syntax highlighting
+    return Text(
+      code,
+      style: TextStyle(
+        fontFamily: 'Monaco',
+        fontSize: 13,
+        color: isDarkTheme ? const Color(0xFFD4D4D4) : const Color(0xFF000000),
+      ),
+    );
+  }
+  
   // Create the theme
   final theme = isDarkTheme ? _createCustomDarkTheme() : gh_theme.githubTheme;
   
   return HighlightView(
     code,
-    language: language.isEmpty ? null : language,
+    language: language,
     theme: theme,
     tabSize: 2,
     textStyle: const TextStyle(
@@ -360,11 +394,11 @@ Map<String, TextStyle> _createCustomDarkTheme() {
 
 class _CopyButton extends StatefulWidget {
   final String code;
-  final bool isDarkTheme;
+  final BuildContext context;
 
   const _CopyButton({
     required this.code,
-    required this.isDarkTheme,
+    required this.context,
   });
 
   @override
@@ -393,6 +427,9 @@ class _CopyButtonState extends State<_CopyButton> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    
     return InkWell(
       onTap: _copyToClipboard,
       borderRadius: BorderRadius.circular(4),
@@ -400,8 +437,8 @@ class _CopyButtonState extends State<_CopyButton> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: _isCopied
-              ? (widget.isDarkTheme ? Colors.green.shade700 : Colors.green.shade100)
-              : (widget.isDarkTheme ? Colors.white : Colors.black).withOpacity(0.1),
+              ? Colors.green.withValues(alpha: isDarkTheme ? 0.7 : 0.2)
+              : colorScheme.onSurface.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
@@ -411,8 +448,8 @@ class _CopyButtonState extends State<_CopyButton> {
               _isCopied ? Icons.check : Icons.copy,
               size: 14,
               color: _isCopied
-                  ? (widget.isDarkTheme ? Colors.green.shade300 : Colors.green.shade700)
-                  : (widget.isDarkTheme ? Colors.white70 : Colors.black54),
+                  ? Colors.green.shade600
+                  : colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             const SizedBox(width: 4),
             Text(
@@ -420,8 +457,8 @@ class _CopyButtonState extends State<_CopyButton> {
               style: TextStyle(
                 fontSize: 11,
                 color: _isCopied
-                    ? (widget.isDarkTheme ? Colors.green.shade300 : Colors.green.shade700)
-                    : (widget.isDarkTheme ? Colors.white70 : Colors.black54),
+                    ? Colors.green.shade600
+                    : colorScheme.onSurface.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w500,
               ),
             ),

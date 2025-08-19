@@ -106,3 +106,74 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# === CPack Configuration ===
+# Configure CPack for creating Windows installers
+
+set(CPACK_GENERATOR "NSIS")
+set(CPACK_PACKAGE_NAME "MDTool")
+set(CPACK_PACKAGE_VENDOR "MDTool")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A powerful Markdown editor and viewer")
+set(CPACK_PACKAGE_VERSION_MAJOR "1")
+set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "MDTool")
+set(CPACK_PACKAGE_EXECUTABLES "MDTool" "MDTool")
+
+# NSIS specific settings
+set(CPACK_NSIS_DISPLAY_NAME "MDTool - Markdown Editor")
+set(CPACK_NSIS_PACKAGE_NAME "MDTool")
+set(CPACK_NSIS_INSTALLED_ICON_NAME "MDTool.exe")
+set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.ico")
+set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.ico")
+set(CPACK_NSIS_HELP_LINK "https://github.com/yourusername/mdtool")
+set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/yourusername/mdtool")
+set(CPACK_NSIS_CONTACT "support@mdtool.com")
+set(CPACK_NSIS_CREATE_ICONS_EXTRA "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\MDTool.lnk' '$INSTDIR\\\\MDTool.exe'")
+set(CPACK_NSIS_DELETE_ICONS_EXTRA "Delete '$SMPROGRAMS\\\\$START_MENU\\\\MDTool.lnk'")
+
+# File associations and registry entries
+set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+  ; Register file associations
+  WriteRegStr HKCR '.md' '' 'MDTool.Document'
+  WriteRegStr HKCR '.markdown' '' 'MDTool.Document'
+  WriteRegStr HKCR '.mdown' '' 'MDTool.Document'
+  WriteRegStr HKCR '.mkd' '' 'MDTool.Document'
+  WriteRegStr HKCR '.mkdn' '' 'MDTool.Document'
+  
+  WriteRegStr HKCR 'MDTool.Document' '' 'Markdown Document'
+  WriteRegStr HKCR 'MDTool.Document\\\\DefaultIcon' '' '$INSTDIR\\\\MDTool.exe,0'
+  WriteRegStr HKCR 'MDTool.Document\\\\shell\\\\open' '' 'Open with MDTool'
+  WriteRegStr HKCR 'MDTool.Document\\\\shell\\\\open\\\\command' '' '\\\"$INSTDIR\\\\MDTool.exe\\\" \\\"%1\\\"'
+  
+  ; Add to OpenWith list
+  WriteRegStr HKCR '.md\\\\OpenWithProgids' 'MDTool.Document' ''
+  WriteRegStr HKCR '.markdown\\\\OpenWithProgids' 'MDTool.Document' ''
+  WriteRegStr HKCR '.mdown\\\\OpenWithProgids' 'MDTool.Document' ''
+  WriteRegStr HKCR '.mkd\\\\OpenWithProgids' 'MDTool.Document' ''
+  WriteRegStr HKCR '.mkdn\\\\OpenWithProgids' 'MDTool.Document' ''
+  
+  ; Context menu for all markdown files
+  WriteRegStr HKCR '*\\\\shell\\\\MDTool' '' 'Open with MDTool'
+  WriteRegStr HKCR '*\\\\shell\\\\MDTool' 'AppliesTo' 'System.FileName:\\\"*.md\\\" OR System.FileName:\\\"*.markdown\\\" OR System.FileName:\\\"*.mdown\\\" OR System.FileName:\\\"*.mkd\\\" OR System.FileName:\\\"*.mkdn\\\"'
+  WriteRegStr HKCR '*\\\\shell\\\\MDTool\\\\command' '' '\\\"$INSTDIR\\\\MDTool.exe\\\" \\\"%1\\\"'
+  
+  ; Refresh shell
+  System::Call 'shell32.dll::SHChangeNotify(l, l, i, i) v (0x08000000, 0, 0, 0)'
+")
+
+set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+  ; Remove file associations
+  DeleteRegKey HKCR '.md'
+  DeleteRegKey HKCR '.markdown'  
+  DeleteRegKey HKCR '.mdown'
+  DeleteRegKey HKCR '.mkd'
+  DeleteRegKey HKCR '.mkdn'
+  DeleteRegKey HKCR 'MDTool.Document'
+  DeleteRegKey HKCR '*\\\\shell\\\\MDTool'
+  
+  ; Refresh shell
+  System::Call 'shell32.dll::SHChangeNotify(l, l, i, i) v (0x08000000, 0, 0, 0)'
+")
+
+include(CPack)

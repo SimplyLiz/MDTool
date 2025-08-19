@@ -1,12 +1,13 @@
-# Graphs and Diagrams Examples
+# Mermaid Graph Examples
 
-Comprehensive collection of graphs, charts, and diagrams using Mermaid and other visualization formats.
+Comprehensive collection of graphs, charts, and diagrams using Mermaid syntax.
 
 ## Navigation
-- [🏠 Back to README](../README.md)
-- [👋 Hello World Example](basic/hello-world.md)
-- [🔧 Complex Example](advanced/complex-example.md)
-- [📚 Tutorial 01](../guides/tutorials/tutorial-01.md)
+- [🏠 Back to Main Index](../../index.md)
+- [📊 Native Graph Examples](native_graphs.md) - Non-Mermaid graphs
+- [👋 Hello World Example](../basic/hello-world.md)
+- [🔧 Complex Example](../advanced/complex-example.md)
+- [📚 Tutorial 01](../../guides/tutorials/tutorial-01.md)
 
 ## Introduction
 
@@ -736,4 +737,4 @@ To test these graphs:
 
 ---
 
-*Return to [Examples Directory](../examples/) or [main README](../README.md) for complete project navigation.*
+*Return to [Main Index](../../index.md) or [Native Graph Examples](native_graphs.md) for complete project navigation.*

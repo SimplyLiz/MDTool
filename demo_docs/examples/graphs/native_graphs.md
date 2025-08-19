@@ -1,6 +1,12 @@
-# Graph Examples
+# Native Graph Examples
 
-This document demonstrates all supported graph types in MDTool (excluding Mermaid).
+This document demonstrates all supported graph types in MDTool using native renderers (non-Mermaid).
+
+## Navigation
+- [🏠 Back to Main Index](../../index.md)
+- [📊 Mermaid Graph Examples](mermaid_graphs.md)
+- [📝 Basic Examples](../basic/hello-world.md)
+- [🔧 Advanced Examples](../advanced/complex-example.md)
 
 ## Statistical Charts
 
@@ -393,3 +399,18 @@ end fork
 stop
 @enduml
 ```
+
+## Related Examples
+
+### Graph Comparison
+- [Mermaid Graph Examples](mermaid_graphs.md) - Comprehensive Mermaid diagrams
+- [Basic Markdown Examples](../basic/hello-world.md) - Simple markdown features
+- [Advanced Examples](../advanced/complex-example.md) - Complex navigation patterns
+
+### Documentation
+- [User Guide](../../docs/user-guide/getting-started.md) - Getting started with MDTool
+- [Developer Guide](../../docs/developer-guide/architecture.md) - System architecture
+
+---
+
+*Return to [Main Index](../../index.md) for complete project navigation.*

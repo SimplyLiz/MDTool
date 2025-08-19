@@ -3,9 +3,11 @@
 A simple introduction to markdown navigation in the demo project.
 
 ## Navigation
-- [🏠 Back to README](../../README.md)
+- [🏠 Back to Main Index](../../index.md)
+- [📋 Project README](../../core/README.md)
 - [📚 Tutorial 01](../../guides/tutorials/tutorial-01.md)
 - [🔧 Complex Example](../advanced/complex-example.md)
+- [📊 Graph Examples](../graphs/native_graphs.md)
 
 ## Introduction
 

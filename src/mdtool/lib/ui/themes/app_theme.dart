@@ -5,6 +5,11 @@ class AppTheme {
   static const Color _backgroundColor = Color(0xFFF2F2F7);
   static const Color _darkBackgroundColor = Color(0xFF1C1C1E);
   
+  // Copy button colors
+  static const Color successGreen = Color(0xFF28A745);
+  static const Color lightSuccessBackground = Color(0x3328A745); // 20% opacity
+  static const Color darkSuccessBackground = Color(0xB328A745); // 70% opacity
+  
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,

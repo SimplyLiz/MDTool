@@ -5,6 +5,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/github.dart' as gh_theme;
+import 'package:flutter_highlight/themes/vs2015.dart' as vs_dark_theme;
+import '../themes/app_theme.dart';
 
 class FencedCodeBlockBuilder extends MarkdownElementBuilder {
   final BuildContext context;
@@ -53,7 +55,7 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainer,
+              color: isDarkTheme ? colorScheme.surfaceContainerHigh : colorScheme.surfaceContainer,
               borderRadius: normalizedLang.isNotEmpty
                   ? const BorderRadius.only(
                       topLeft: Radius.circular(8),
@@ -179,7 +181,7 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
         return HighlightView(
           code,
           language: language,
-          theme: isDarkTheme ? _customDarkTheme() : gh_theme.githubTheme,
+          theme: isDarkTheme ? _getTransparentVs2015Theme() : gh_theme.githubTheme,
           tabSize: 2,
           textStyle: const TextStyle(
             fontFamily: 'Monaco',
@@ -210,79 +212,13 @@ class FencedCodeBlockBuilder extends MarkdownElementBuilder {
     );
   }
 
-  Map<String, TextStyle> _customDarkTheme() {
-    // Custom dark theme optimized for better visibility and contrast
-    return {
-      'root': const TextStyle(
-        backgroundColor: Color(0xFF1E1E1E),
-        color: Color(0xFFD4D4D4), // Light gray for default text
-      ),
-      'keyword': const TextStyle(
-        color: Color(0xFF569CD6), // Bright blue for keywords (void, class, etc.)
-        fontWeight: FontWeight.bold,
-      ),
-      'built_in': const TextStyle(
-        color: Color(0xFF4EC9B0), // Cyan for built-in types (String, int, List)
-      ),
-      'type': const TextStyle(
-        color: Color(0xFF4EC9B0), // Cyan for types
-      ),
-      'string': const TextStyle(
-        color: Color(0xFFCE9178), // Orange for strings
-      ),
-      'number': const TextStyle(
-        color: Color(0xFFB5CEA8), // Light green for numbers
-      ),
-      'comment': const TextStyle(
-        color: Color(0xFF6A9955), // Green for comments
-        fontStyle: FontStyle.italic,
-      ),
-      'function': const TextStyle(
-        color: Color(0xFFDCDCAA), // Yellow for function names
-      ),
-      'variable': const TextStyle(
-        color: Color(0xFF9CDCFE), // Light blue for variables
-      ),
-      'property': const TextStyle(
-        color: Color(0xFF9CDCFE), // Light blue for properties
-      ),
-      'attr': const TextStyle(
-        color: Color(0xFF92C5F8), // Light blue for attributes
-      ),
-      'symbol': const TextStyle(
-        color: Color(0xFFD4D4D4), // Default color for symbols
-      ),
-      'punctuation': const TextStyle(
-        color: Color(0xFFD4D4D4), // Default color for punctuation
-      ),
-      'literal': const TextStyle(
-        color: Color(0xFF569CD6), // Blue for literals (true, false, null)
-      ),
-      'tag': const TextStyle(
-        color: Color(0xFF569CD6), // Blue for HTML/XML tags
-      ),
-      'name': const TextStyle(
-        color: Color(0xFF4FC1FF), // Bright blue for names
-      ),
-      'class': const TextStyle(
-        color: Color(0xFF4EC9B0), // Cyan for class names
-        fontWeight: FontWeight.bold,
-      ),
-      'title': const TextStyle(
-        color: Color(0xFFDCDCAA), // Yellow for titles/function definitions
-        fontWeight: FontWeight.bold,
-      ),
-      'params': const TextStyle(
-        color: Color(0xFF9CDCFE), // Light blue for parameters
-      ),
-      'meta': const TextStyle(
-        color: Color(0xFF569CD6), // Blue for meta information
-      ),
-      'operator': const TextStyle(
-        color: Color(0xFFD4D4D4), // Default color for operators
-      ),
-    };
+  Map<String, TextStyle> _getTransparentVs2015Theme() {
+    // Copy vs2015 theme but remove background color from root
+    final theme = Map<String, TextStyle>.from(vs_dark_theme.vs2015Theme);
+    theme['root'] = const TextStyle(color: Color(0xffDCDCDC)); // Remove backgroundColor
+    return theme;
   }
+
 }
 
 // Static function for compute() - must be top-level or static
@@ -303,8 +239,8 @@ Widget _highlightInBackground(Map<String, dynamic> params) {
     );
   }
   
-  // Create the theme
-  final theme = isDarkTheme ? _createCustomDarkTheme() : gh_theme.githubTheme;
+  // Create the theme with transparent background for dark mode
+  final theme = isDarkTheme ? _createTransparentVs2015Theme() : gh_theme.githubTheme;
   
   return HighlightView(
     code,
@@ -318,79 +254,13 @@ Widget _highlightInBackground(Map<String, dynamic> params) {
   );
 }
 
-// Static function to create dark theme (for use in isolate)
-Map<String, TextStyle> _createCustomDarkTheme() {
-  return {
-    'root': const TextStyle(
-      backgroundColor: Color(0xFF1E1E1E),
-      color: Color(0xFFD4D4D4),
-    ),
-    'keyword': const TextStyle(
-      color: Color(0xFF569CD6),
-      fontWeight: FontWeight.bold,
-    ),
-    'built_in': const TextStyle(
-      color: Color(0xFF4EC9B0),
-    ),
-    'type': const TextStyle(
-      color: Color(0xFF4EC9B0),
-    ),
-    'string': const TextStyle(
-      color: Color(0xFFCE9178),
-    ),
-    'number': const TextStyle(
-      color: Color(0xFFB5CEA8),
-    ),
-    'comment': const TextStyle(
-      color: Color(0xFF6A9955),
-      fontStyle: FontStyle.italic,
-    ),
-    'function': const TextStyle(
-      color: Color(0xFFDCDCAA),
-    ),
-    'variable': const TextStyle(
-      color: Color(0xFF9CDCFE),
-    ),
-    'property': const TextStyle(
-      color: Color(0xFF9CDCFE),
-    ),
-    'attr': const TextStyle(
-      color: Color(0xFF92C5F8),
-    ),
-    'symbol': const TextStyle(
-      color: Color(0xFFD4D4D4),
-    ),
-    'punctuation': const TextStyle(
-      color: Color(0xFFD4D4D4),
-    ),
-    'literal': const TextStyle(
-      color: Color(0xFF569CD6),
-    ),
-    'tag': const TextStyle(
-      color: Color(0xFF569CD6),
-    ),
-    'name': const TextStyle(
-      color: Color(0xFF4FC1FF),
-    ),
-    'class': const TextStyle(
-      color: Color(0xFF4EC9B0),
-      fontWeight: FontWeight.bold,
-    ),
-    'title': const TextStyle(
-      color: Color(0xFFDCDCAA),
-      fontWeight: FontWeight.bold,
-    ),
-    'params': const TextStyle(
-      color: Color(0xFF9CDCFE),
-    ),
-    'meta': const TextStyle(
-      color: Color(0xFF569CD6),
-    ),
-    'operator': const TextStyle(
-      color: Color(0xFFD4D4D4),
-    ),
-  };
+// Static function to create transparent vs2015 theme (for use in isolate)
+Map<String, TextStyle> _createTransparentVs2015Theme() {
+  final theme = Map<String, TextStyle>.from(vs_dark_theme.vs2015Theme);
+  theme['root'] = const TextStyle(color: Color(0xffDCDCDC)); // Remove backgroundColor
+  return theme;
 }
+
 
 class _CopyButton extends StatefulWidget {
   final String code;
@@ -437,7 +307,7 @@ class _CopyButtonState extends State<_CopyButton> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: _isCopied
-              ? Colors.green.withValues(alpha: isDarkTheme ? 0.7 : 0.2)
+              ? (isDarkTheme ? AppTheme.darkSuccessBackground : AppTheme.lightSuccessBackground)
               : colorScheme.onSurface.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
@@ -448,7 +318,7 @@ class _CopyButtonState extends State<_CopyButton> {
               _isCopied ? Icons.check : Icons.copy,
               size: 14,
               color: _isCopied
-                  ? Colors.green.shade600
+                  ? AppTheme.successGreen
                   : colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             const SizedBox(width: 4),
@@ -457,7 +327,7 @@ class _CopyButtonState extends State<_CopyButton> {
               style: TextStyle(
                 fontSize: 11,
                 color: _isCopied
-                    ? Colors.green.shade600
+                    ? AppTheme.successGreen
                     : colorScheme.onSurface.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w500,
               ),

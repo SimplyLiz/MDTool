@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../graph_renderer.dart';
 import 'dart:convert';
+import 'dart:math' as math;
 
 /// Mermaid graph renderer using WebView
 class MermaidRenderer extends GraphRenderer {
@@ -41,23 +42,63 @@ class MermaidRenderer extends GraphRenderer {
         (Theme.of(context).brightness == Brightness.dark ? 'dark' : 'light');
     
     final html = _generateMermaidHTML(content, theme, options);
+    debugPrint('MermaidRenderer: Generated HTML (${html.length} chars)');
+    debugPrint('MermaidRenderer: HTML preview: ${html.substring(0, math.min(200, html.length))}...');
     
     await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
     await controller.setNavigationDelegate(
       NavigationDelegate(
+        onPageStarted: (url) {
+          debugPrint('MermaidRenderer: Page started loading: $url');
+        },
         onPageFinished: (url) {
-          // Inject content after page loads
-          controller.runJavaScript('renderMermaid(`${_escapeContent(content)}`)');
+          debugPrint('MermaidRenderer: Page finished loading: $url');
+          // Wait for Mermaid.js to be fully loaded and initialized
+          Future.delayed(const Duration(milliseconds: 800), () {
+            final escapedContent = _escapeContent(content);
+            debugPrint('MermaidRenderer: Injecting mermaid content (${escapedContent.length} chars)');
+            controller.runJavaScript('''
+              if (window.renderMermaid) {
+                window.renderMermaid(`$escapedContent`);
+              } else {
+                console.error('renderMermaid function not available');
+              }
+            ''');
+          });
+        },
+        onWebResourceError: (error) {
+          debugPrint('MermaidRenderer: WebResource error: ${error.description}');
         },
       ),
     );
     
+    debugPrint('MermaidRenderer: Loading HTML string...');
     await controller.loadHtmlString(html);
+    debugPrint('MermaidRenderer: HTML string loaded');
     
+    // For debugging - create a container with visible dimensions
     return Container(
       height: options?.height ?? 400,
       width: options?.width ?? double.infinity,
-      child: WebViewWidget(controller: controller),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.green, width: 2),
+        color: Colors.green.withOpacity(0.1),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            color: Colors.green.withOpacity(0.2),
+            child: Text(
+              'WEBVIEW CONTAINER: ${options?.height ?? 400}px × ${options?.width ?? 'auto'}px',
+              style: TextStyle(color: Colors.green[800], fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+          Expanded(
+            child: WebViewWidget(controller: controller),
+          ),
+        ],
+      ),
     );
   }
   
@@ -135,7 +176,7 @@ class MermaidRenderer extends GraphRenderer {
   
   String _generateMermaidHTML(String content, String theme, GraphRenderOptions? options) {
     final mermaidConfig = {
-      'startOnLoad': true,
+      'startOnLoad': false,
       'theme': theme == 'dark' ? 'dark' : 'default',
       'themeVariables': theme == 'dark' ? {
         'primaryColor': '#bb86fc',
@@ -208,7 +249,7 @@ class MermaidRenderer extends GraphRenderer {
             overflow: auto;
         }
         
-        .mermaid {
+        #mermaid-graph {
             max-width: 100%;
             height: auto;
         }
@@ -238,26 +279,52 @@ class MermaidRenderer extends GraphRenderer {
 </head>
 <body>
     <div id="mermaid-container">
-        <div class="mermaid" id="mermaid-graph">
-            Loading...
+        <div id="mermaid-graph">
+            Loading diagram...
         </div>
     </div>
     
-    <script type="module">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    <script src="https://unpkg.com/mermaid@10.9.1/dist/mermaid.min.js" 
+            onload="console.log('Mermaid script loaded')"
+            onerror="console.error('Failed to load Mermaid script')"></script>
+    <script>
+        // Wait for Mermaid to be available and initialize it
+        function initializeMermaid() {
+            try {
+                if (typeof mermaid === 'undefined') {
+                    console.error('Mermaid library not loaded');
+                    showError('Mermaid library failed to load');
+                    return;
+                }
+                
+                mermaid.initialize(${jsonEncode(mermaidConfig)});
+                console.log('Mermaid initialized successfully');
+            } catch (error) {
+                console.error('Mermaid initialization error:', error);
+                showError('Failed to initialize Mermaid: ' + error.message);
+            }
+        }
         
-        mermaid.initialize(${jsonEncode(mermaidConfig)});
+        // Initialize when the page loads
+        if (typeof mermaid !== 'undefined') {
+            initializeMermaid();
+        } else {
+            // Wait a bit for the script to load
+            setTimeout(initializeMermaid, 100);
+        }
         
-        function renderMermaid(content) {
+        async function renderMermaid(content) {
             try {
                 const container = document.getElementById('mermaid-graph');
-                container.innerHTML = content;
                 
-                // Mermaid will automatically render when startOnLoad is true
-                console.log('Mermaid content loaded');
+                // Use the modern mermaid.render API for better control
+                const { svg } = await mermaid.render('mermaid-diagram', content);
+                container.innerHTML = svg;
+                
+                console.log('Mermaid diagram rendered successfully');
             } catch (error) {
-                console.error('Mermaid setup error:', error);
-                showError('Failed to initialize diagram: ' + error.message);
+                console.error('Mermaid render error:', error);
+                showError('Failed to render diagram: ' + error.message);
             }
         }
         

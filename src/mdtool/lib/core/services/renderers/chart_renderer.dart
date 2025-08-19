@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../graph_renderer.dart';
-import 'dart:convert';
 import 'dart:math' as math;
 
 /// Chart renderer for statistical charts using fl_chart
@@ -238,7 +237,7 @@ class ChartRenderer extends GraphRenderer {
           maxY: _getMaxValue(chartData.data) * 1.2,
           barTouchData: BarTouchData(
             touchTooltipData: BarTouchTooltipData(
-              tooltipBgColor: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+              getTooltipColor: (group) => isDark ? Colors.grey[800]! : Colors.grey[200]!,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 final point = chartData.data[group.x.toInt()];
                 return BarTooltipItem(
@@ -326,7 +325,7 @@ class ChartRenderer extends GraphRenderer {
         LineChartData(
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+              getTooltipColor: (touchedSpots) => isDark ? Colors.grey[800]! : Colors.grey[200]!,
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((spot) {
                   final point = chartData.data[spot.spotIndex];
@@ -438,7 +437,6 @@ class ChartRenderer extends GraphRenderer {
             return ScatterSpot(
               point.x,
               point.y,
-              radius: 8,
             );
           }).toList(),
           titlesData: FlTitlesData(
@@ -499,7 +497,7 @@ class ChartRenderer extends GraphRenderer {
         LineChartData(
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+              getTooltipColor: (touchedSpots) => isDark ? Colors.grey[800]! : Colors.grey[200]!,
             ),
           ),
           titlesData: FlTitlesData(

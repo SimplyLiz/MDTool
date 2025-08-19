@@ -69,6 +69,7 @@ dependencies:
   # Graph Rendering & Visualization
   webview_flutter: ^4.7.0
   graphview: ^1.2.0
+  fl_chart: ^0.69.0
   
   # Utilities
   equatable: ^2.0.5

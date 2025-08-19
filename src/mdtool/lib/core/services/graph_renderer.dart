@@ -267,13 +267,23 @@ class GraphRenderingService {
     if (_initialized) return;
     
     debugPrint('Initializing GraphRenderingService...');
+    await _registerAvailableRenderers();
     _initialized = true;
     debugPrint('GraphRenderingService initialized with ${_registry.renderers.length} renderers');
   }
   
+  /// Register all available renderers
+  Future<void> _registerAvailableRenderers() async {
+    // We can't import the renderers here due to circular dependencies
+    // Instead, ensure the registry is shared globally and let renderers register themselves
+    debugPrint('GraphRenderingService: Registry ready, renderers will register on first use');
+  }
+  
   /// Create a markdown element builder that can render graphs
   dynamic createElementBuilder(BuildContext context) {
-    return GraphElementBuilder(service: this, context: context);
+    // This method is not used - element builders are created directly
+    // by the UI components that need them
+    throw UnimplementedError('Use GraphElementBuilder directly from ui/widgets/graph_element_builder.dart');
   }
   
   /// Render a graph with the given syntax and content
@@ -313,13 +323,13 @@ class GraphRenderingService {
   }
 }
 
-/// Placeholder for GraphElementBuilder - will be implemented in graph_element_builder.dart
-class GraphElementBuilder {
-  final GraphRenderingService service;
-  final BuildContext context;
+/// Static registry for renderers to register themselves
+class RendererRegistry {
+  static final GraphRendererRegistry _globalRegistry = GraphRendererRegistry();
   
-  GraphElementBuilder({
-    required this.service,
-    required this.context,
-  });
+  static void registerRenderer(GraphRenderer renderer) {
+    _globalRegistry.register(renderer);
+  }
+  
+  static GraphRendererRegistry get instance => _globalRegistry;
 }

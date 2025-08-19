@@ -19,6 +19,25 @@ class AppDelegate: FlutterAppDelegate {
     return true
   }
   
+  override func application(_ sender: NSApplication, openFile filename: String) -> Bool {
+    // Handle file opening from Finder
+    if let window = NSApplication.shared.mainWindow,
+       let flutterViewController = window.contentViewController as? FlutterViewController {
+      let channel = FlutterMethodChannel(
+        name: "open_file_channel",
+        binaryMessenger: flutterViewController.engine.binaryMessenger
+      )
+      channel.invokeMethod("openFile", arguments: filename)
+      return true
+    } else {
+      // Store the file path to open after the app fully launches
+      pendingFileToOpen = filename
+      return true
+    }
+  }
+  
+  private var pendingFileToOpen: String?
+  
   override func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
     let dockMenu = NSMenu()
     
@@ -39,7 +58,7 @@ class AppDelegate: FlutterAppDelegate {
     
     // Set up window properties
     newWindow.center()
-    newWindow.title = "MD Tool"
+    newWindow.title = "MDTool"
     newWindow.makeKeyAndOrderFront(self)
     
     // Set up window delegate for cleanup
@@ -47,6 +66,20 @@ class AppDelegate: FlutterAppDelegate {
     
     // Ensure the window is retained
     windows.append(newWindow)
+    
+    // If there's a pending file to open, handle it now
+    if let pendingFile = pendingFileToOpen {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        if let flutterViewController = newWindow.contentViewController as? FlutterViewController {
+          let channel = FlutterMethodChannel(
+            name: "open_file_channel",
+            binaryMessenger: flutterViewController.engine.binaryMessenger
+          )
+          channel.invokeMethod("openFile", arguments: pendingFile)
+        }
+      }
+      pendingFileToOpen = nil
+    }
   }
   
   // Keep track of windows to prevent deallocation

@@ -1,0 +1,62 @@
+Windows Registry Editor Version 5.00
+
+; Register MDTool file associations for Markdown files
+; This adds "Open with MDTool" to the Windows Explorer context menu
+
+; Register .md file extension
+[HKEY_CURRENT_USER\Software\Classes\.md]
+@="MDTool.Document"
+
+[HKEY_CURRENT_USER\Software\Classes\.md\OpenWithProgids]
+"MDTool.Document"=""
+
+; Register .markdown file extension
+[HKEY_CURRENT_USER\Software\Classes\.markdown]
+@="MDTool.Document"
+
+[HKEY_CURRENT_USER\Software\Classes\.markdown\OpenWithProgids]
+"MDTool.Document"=""
+
+; Register .mdown file extension
+[HKEY_CURRENT_USER\Software\Classes\.mdown]
+@="MDTool.Document"
+
+[HKEY_CURRENT_USER\Software\Classes\.mdown\OpenWithProgids]
+"MDTool.Document"=""
+
+; Register .mkd file extension
+[HKEY_CURRENT_USER\Software\Classes\.mkd]
+@="MDTool.Document"
+
+[HKEY_CURRENT_USER\Software\Classes\.mkd\OpenWithProgids]
+"MDTool.Document"=""
+
+; Register .mkdn file extension
+[HKEY_CURRENT_USER\Software\Classes\.mkdn]
+@="MDTool.Document"
+
+[HKEY_CURRENT_USER\Software\Classes\.mkdn\OpenWithProgids]
+"MDTool.Document"=""
+
+; Define MDTool document type
+[HKEY_CURRENT_USER\Software\Classes\MDTool.Document]
+@="Markdown Document"
+
+[HKEY_CURRENT_USER\Software\Classes\MDTool.Document\DefaultIcon]
+@="%ProgramFiles%\\MDTool\\MDTool.exe,0"
+
+[HKEY_CURRENT_USER\Software\Classes\MDTool.Document\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\MDTool.Document\shell\open]
+@="Open with MDTool"
+
+[HKEY_CURRENT_USER\Software\Classes\MDTool.Document\shell\open\command]
+@="\"%ProgramFiles%\\MDTool\\MDTool.exe\" \"%1\""
+
+; Add context menu entry for all files (right-click on any Markdown file)
+[HKEY_CURRENT_USER\Software\Classes\*\shell\MDTool]
+@="Open with MDTool"
+"AppliesTo"="System.FileName:\"*.md\" OR System.FileName:\"*.markdown\" OR System.FileName:\"*.mdown\" OR System.FileName:\"*.mkd\" OR System.FileName:\"*.mkdn\""
+
+[HKEY_CURRENT_USER\Software\Classes\*\shell\MDTool\command]
+@="\"%ProgramFiles%\\MDTool\\MDTool.exe\" \"%1\""

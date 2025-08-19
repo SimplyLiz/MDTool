@@ -987,6 +987,62 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
     );
   }
 
+  /// Show dialog for missing files/folders with option to remove from recents
+  void _showMissingItemDialog(RecentItem item, WidgetRef ref) {
+    final itemType = item.type == RecentItemType.file ? 'File' : 'Folder';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$itemType Not Found'),
+        content: Text(
+          'The ${itemType.toLowerCase()} "${item.name}" no longer exists or has been moved.\n\n'
+          'Would you like to remove it from your recent items?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Keep'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref.read(preferencesProvider.notifier).removeRecentItem(item.path);
+            },
+            child: const Text('Remove from Recents'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show dialog for missing favorite files/folders with option to remove from favorites
+  void _showMissingFavoriteDialog(FavoriteItem item, WidgetRef ref) {
+    final itemType = item.type == FavoriteItemType.file ? 'File' : 'Folder';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$itemType Not Found'),
+        content: Text(
+          'The ${itemType.toLowerCase()} "${item.name}" no longer exists or has been moved.\n\n'
+          'Would you like to remove it from your favorites?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Keep'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref.read(preferencesProvider.notifier).removeFavoriteItem(item.path);
+            },
+            child: const Text('Remove from Favorites'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _saveFile(WidgetRef ref) async {
     final appState = ref.read(appStateProvider);
     if (appState.currentFile == null) return;
@@ -1039,9 +1095,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       if (item.type == RecentItemType.file) {
         // Check if file still exists
         if (!await File(item.path).exists()) {
-          _showErrorDialog('File no longer exists: ${item.name}');
-          // Remove from recent items
-          ref.read(preferencesProvider.notifier).removeRecentItem(item.path);
+          _showMissingItemDialog(item, ref);
           return;
         }
 
@@ -1110,9 +1164,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       } else {
         // Handle folder opening
         if (!await Directory(item.path).exists()) {
-          _showErrorDialog('Folder no longer exists: ${item.name}');
-          // Remove from recent items
-          ref.read(preferencesProvider.notifier).removeRecentItem(item.path);
+          _showMissingItemDialog(item, ref);
           return;
         }
 
@@ -1256,9 +1308,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       if (item.type == FavoriteItemType.file) {
         // Check if file still exists
         if (!await File(item.path).exists()) {
-          _showErrorDialog('File no longer exists: ${item.name}');
-          // Remove from favorites
-          ref.read(preferencesProvider.notifier).removeFavoriteItem(item.path);
+          _showMissingFavoriteDialog(item, ref);
           return;
         }
 
@@ -1328,9 +1378,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       } else {
         // Handle favorite folder opening
         if (!await Directory(item.path).exists()) {
-          _showErrorDialog('Folder no longer exists: ${item.name}');
-          // Remove from favorites
-          ref.read(preferencesProvider.notifier).removeFavoriteItem(item.path);
+          _showMissingFavoriteDialog(item, ref);
           return;
         }
 

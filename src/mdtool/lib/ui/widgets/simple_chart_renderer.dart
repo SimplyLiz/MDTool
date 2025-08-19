@@ -219,9 +219,13 @@ class SimpleChartRenderer {
       print('SimpleChartRenderer: Starting render for ${renderer.type}');
       print('SimpleChartRenderer: Content preview: ${content.substring(0, math.min(100, content.length))}...');
       
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
+      
       final options = GraphRenderOptions(
-        theme: Theme.of(context).brightness == Brightness.dark ? 'dark' : 'light',
+        theme: theme.brightness == Brightness.dark ? 'dark' : 'light',
         interactive: true,
+        backgroundColor: colorScheme.surfaceContainerHighest,
       );
       
       final result = await renderer.render(content, context, options: options);

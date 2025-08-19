@@ -41,6 +41,7 @@ class GraphRenderOptions {
   final double? height;
   final String? theme; // 'light', 'dark', 'auto'
   final bool interactive;
+  final Color? backgroundColor;
   final Map<String, dynamic>? customOptions;
   
   const GraphRenderOptions({
@@ -48,6 +49,7 @@ class GraphRenderOptions {
     this.height,
     this.theme,
     this.interactive = true,
+    this.backgroundColor,
     this.customOptions,
   });
   
@@ -56,6 +58,7 @@ class GraphRenderOptions {
     double? height,
     String? theme,
     bool? interactive,
+    Color? backgroundColor,
     Map<String, dynamic>? customOptions,
   }) {
     return GraphRenderOptions(
@@ -63,8 +66,22 @@ class GraphRenderOptions {
       height: height ?? this.height,
       theme: theme ?? this.theme,
       interactive: interactive ?? this.interactive,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
       customOptions: customOptions ?? this.customOptions,
     );
+  }
+  
+  /// Convert background color to CSS string
+  String get backgroundColorCss {
+    if (backgroundColor == null) return 'transparent';
+    
+    final color = backgroundColor!;
+    final r = (color.r * 255.0).round() & 0xff;
+    final g = (color.g * 255.0).round() & 0xff;
+    final b = (color.b * 255.0).round() & 0xff;
+    final a = color.a;
+    
+    return 'rgba($r, $g, $b, $a)';
   }
 }
 

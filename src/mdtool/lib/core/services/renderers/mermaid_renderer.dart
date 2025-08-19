@@ -142,9 +142,11 @@ class MermaidRenderer extends GraphRenderer {
   }
   
   String _generateMermaidHTML(String content, String theme, GraphRenderOptions? options) {
+    final bgColor = options?.backgroundColorCss ?? 'transparent';
+    
     final mermaidConfig = {
       'startOnLoad': false,
-      'theme': theme == 'dark' ? 'dark' : 'default',
+      'theme': 'base',
       'themeVariables': theme == 'dark' ? {
         'primaryColor': '#bb86fc',
         'primaryTextColor': '#ffffff',
@@ -152,10 +154,11 @@ class MermaidRenderer extends GraphRenderer {
         'lineColor': '#ffffff',
         'secondaryColor': '#03dac6',
         'tertiaryColor': '#1f1f1f',
-        'background': '#121212',
-        'mainBkg': '#121212',
-        'secondBkg': '#1f1f1f',
-        'tertiaryBkg': '#2d2d2d',
+        'background': bgColor,
+        'mainBkg': bgColor,
+        'secondBkg': bgColor,
+        'tertiaryBkg': bgColor,
+        'edgeLabelBackground': bgColor,
       } : {
         'primaryColor': '#6366f1',
         'primaryTextColor': '#ffffff',
@@ -163,10 +166,11 @@ class MermaidRenderer extends GraphRenderer {
         'lineColor': '#374151',
         'secondaryColor': '#10b981',
         'tertiaryColor': '#f3f4f6',
-        'background': '#ffffff',
-        'mainBkg': '#ffffff',
-        'secondBkg': '#f9fafb',
-        'tertiaryBkg': '#f3f4f6',
+        'background': bgColor,
+        'mainBkg': bgColor,
+        'secondBkg': bgColor,
+        'tertiaryBkg': bgColor,
+        'edgeLabelBackground': bgColor,
       },
       'flowchart': {
         'htmlLabels': true,
@@ -202,7 +206,7 @@ class MermaidRenderer extends GraphRenderer {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             margin: 0;
             padding: 16px;
-            background: ${theme == 'dark' ? '#121212' : '#ffffff'};
+            background: $bgColor;
             color: ${theme == 'dark' ? '#ffffff' : '#000000'};
             overflow: hidden;
         }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/github.dart';
@@ -8,6 +9,7 @@ import '../../core/services/graph_renderer.dart';
 import '../../core/services/renderers/mermaid_renderer.dart';
 import '../../core/services/renderers/chart_renderer.dart';
 import '../../core/services/renderers/simple_chart_renderer.dart';
+import '../themes/app_theme.dart';
 
 /// Enhanced code element builder that handles both syntax highlighting and graph rendering
 class GraphElementBuilder extends MarkdownElementBuilder {
@@ -156,19 +158,7 @@ class GraphElementBuilder extends MarkdownElementBuilder {
             
             if (snapshot.hasData) {
               debugPrint('GraphElementBuilder: Successfully got rendered widget');
-              return Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.grey.withOpacity(0.3),
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: snapshot.data!,
-                ),
-              );
+              return _buildCodeBlockStyle(snapshot.data!, language ?? '', content, context);
             }
             
             // Should not reach here, but fallback to code block
@@ -344,6 +334,135 @@ class GraphElementBuilder extends MarkdownElementBuilder {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCodeBlockStyle(Widget chartWidget, String language, String originalContent, BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDarkTheme = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Language label and copy button (same as code blocks)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDarkTheme 
+                ? colorScheme.surfaceContainerHigh 
+                : colorScheme.surfaceContainer,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  language,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                    fontFamily: 'Monaco',
+                  ),
+                ),
+                const Spacer(),
+                // Copy button for chart source
+                _GraphCopyButton(code: originalContent, context: context),
+              ],
+            ),
+          ),
+          // Chart content
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: chartWidget,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GraphCopyButton extends StatefulWidget {
+  final String code;
+  final BuildContext context;
+
+  const _GraphCopyButton({required this.code, required this.context});
+
+  @override
+  State<_GraphCopyButton> createState() => _GraphCopyButtonState();
+}
+
+class _GraphCopyButtonState extends State<_GraphCopyButton> {
+  bool _isCopied = false;
+
+  void _copyToClipboard() async {
+    await Clipboard.setData(ClipboardData(text: widget.code));
+
+    setState(() {
+      _isCopied = true;
+    });
+
+    // Reset the copied state after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _isCopied = false;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: _copyToClipboard,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: _isCopied 
+            ? (isDarkTheme ? Colors.green.withValues(alpha: 0.2) : Colors.green.withValues(alpha: 0.1)) 
+            : colorScheme.onSurface.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _isCopied ? Icons.check : Icons.copy,
+              size: 14,
+              color: _isCopied 
+                ? Colors.green 
+                : colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              _isCopied ? 'Copied!' : 'Copy',
+              style: TextStyle(
+                fontSize: 11,
+                color: _isCopied 
+                  ? Colors.green 
+                  : colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -26,7 +26,7 @@ This document demonstrates various types of graphs, charts, and diagrams that ca
 #### Basic Flowchart
 ```mermaid
 flowchart TD
-    A[Start] --> B{Decision}
+    A[Staart] --> B{Decision}
     B -->|Yes| C[Process A]
     B -->|No| D[Process B]
     C --> E[End]

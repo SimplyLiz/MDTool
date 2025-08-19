@@ -250,7 +250,7 @@ Ensure all cross-references remain valid:
 
 ### Examples Collection
 - [Hello World](../basic/hello-world.md) - Basic implementation
-- [All Examples](../../examples/) - Complete collection
+- [All Examples](../../tests/) - Complete collection
 
 ### Learning Resources
 - [Tutorial 01](../../guides/tutorials/tutorial-01.md) - Basic concepts

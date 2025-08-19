@@ -20,13 +20,13 @@ The API is organized into logical groups with cross-references to detailed docum
 #### Authentication & Authorization
 - **Overview**: Basic authentication concepts
 - **Details**: [Authentication Endpoints](endpoints.md#authentication)
-- **Examples**: [Complex Integration Example](../../examples/advanced/complex-example.md#authentication-implementation)
+- **Examples**: [Complex Integration Example](../../tests/advanced/complex-example.md#authentication-implementation)
 - **Troubleshooting**: [Auth Issues](../../guides/how-to/troubleshooting.md#authentication-problems)
 
 #### Data Operations
 - **Overview**: CRUD operations and data management
 - **Details**: [Data Endpoints](endpoints.md#data-operations)
-- **Examples**: [Data Integration Examples](../../examples/advanced/complex-example.md#data-operations)
+- **Examples**: [Data Integration Examples](../../tests/advanced/complex-example.md#data-operations)
 - **Testing**: [Data Testing Procedures](../../docs/developer-guide/testing.md#api-testing)
 
 #### System Operations
@@ -47,8 +47,8 @@ Before integrating with the API:
 #### Basic Integration Flow
 1. **Setup**: [Development environment](../../docs/developer-guide/architecture.md#development-setup)
 2. **Authentication**: [API key setup](endpoints.md#authentication)
-3. **First Request**: [Hello World API example](../../examples/basic/hello-world.md#api-integration)
-4. **Advanced Usage**: [Complex API patterns](../../examples/advanced/complex-example.md#api-integration)
+3. **First Request**: [Hello World API example](../../tests/basic/hello-world.md#api-integration)
+4. **Advanced Usage**: [Complex API patterns](../../tests/advanced/complex-example.md#api-integration)
 
 ### Navigation Patterns in API Documentation
 
@@ -58,7 +58,7 @@ API documentation follows a progressive disclosure pattern:
 **Level 1 - Overview**: [API Overview](api-overview.md) (current document)
 **Level 2 - Categories**: [Endpoints by category](endpoints.md)  
 **Level 3 - Details**: [Specific endpoint documentation](endpoints.md#authentication)
-**Level 4 - Examples**: [Implementation examples](../../examples/advanced/complex-example.md)
+**Level 4 - Examples**: [Implementation examples](../../tests/advanced/complex-example.md)
 
 #### Cross-Reference Networks
 API documentation is interconnected with other project documentation:
@@ -95,7 +95,7 @@ The API supports multiple authentication methods:
 #### OAuth 2.0 Integration
 - **Flow**: [OAuth implementation](endpoints.md#oauth-flow)
 - **Scopes**: [Permission scopes](endpoints.md#oauth-scopes)
-- **Examples**: [OAuth integration examples](../../examples/advanced/complex-example.md#oauth-integration)
+- **Examples**: [OAuth integration examples](../../tests/advanced/complex-example.md#oauth-integration)
 
 ### Security Considerations
 - **Rate Limiting**: [Request limits](endpoints.md#rate-limiting)
@@ -122,15 +122,15 @@ The API supports multiple authentication methods:
 - **Performance Testing**: [Load testing procedures](../../docs/developer-guide/testing.md#performance-testing)
 
 ### Test Examples
-- **Basic Tests**: [Simple API tests](../../examples/basic/hello-world.md#testing-examples)
-- **Advanced Tests**: [Complex test scenarios](../../examples/advanced/complex-example.md#testing-scenarios)
+- **Basic Tests**: [Simple API tests](../../tests/basic/hello-world.md#testing-examples)
+- **Advanced Tests**: [Complex test scenarios](../../tests/advanced/complex-example.md#testing-scenarios)
 - **Automated Testing**: [CI/CD integration](../../guides/how-to/deployment.md#automated-testing)
 
 ## SDK and Client Libraries
 
 ### Available SDKs
 - **JavaScript**: [JS SDK documentation](endpoints.md#javascript-sdk)
-- **Python**: [Python SDK examples](../../examples/advanced/complex-example.md#python-integration)
+- **Python**: [Python SDK examples](../../tests/advanced/complex-example.md#python-integration)
 - **cURL**: [cURL examples](endpoints.md#curl-examples)
 
 ### Integration Examples
@@ -179,7 +179,7 @@ The API supports multiple authentication methods:
 ### Getting Help
 - **Documentation**: [Complete documentation](../../DOCUMENTATION.md)
 - **Tutorials**: [Learning resources](../../guides/tutorials/tutorial-01.md)
-- **Examples**: [Code examples](../../examples/)
+- **Examples**: [Code examples](../../tests/)
 - **Troubleshooting**: [Common issues](../../guides/how-to/troubleshooting.md)
 
 ### Contributing to API Documentation
@@ -211,8 +211,8 @@ The API supports multiple authentication methods:
 - [API Changelog](../changelog/api-changelog.md) - Version history and changes
 
 ### Integration Resources
-- [Complex Example](../../examples/advanced/complex-example.md) - Advanced API integration
-- [Hello World](../../examples/basic/hello-world.md) - Basic API usage
+- [Complex Example](../../tests/advanced/complex-example.md) - Advanced API integration
+- [Hello World](../../tests/basic/hello-world.md) - Basic API usage
 - [Tutorial 02](../../guides/tutorials/tutorial-02.md) - Advanced navigation with APIs
 
 ### Development Resources

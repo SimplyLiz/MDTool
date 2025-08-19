@@ -14,7 +14,7 @@ This getting started guide is part of the [user documentation](../) and provides
 ## Quick Start
 
 1. Read the [project overview](../../DOCUMENTATION.md#overview)
-2. Check out [basic examples](../../examples/basic/hello-world.md)
+2. Check out [basic examples](../../tests/basic/hello-world.md)
 3. Try the [first tutorial](../../guides/tutorials/tutorial-01.md)
 
 ## Basic Concepts
@@ -27,8 +27,8 @@ This project demonstrates various types of markdown links:
 - **Subdirectory links**: `[text](../developer-guide/architecture.md)`
 
 ### Examples
-- [Hello World Example](../../examples/basic/hello-world.md) - Simple introduction
-- [Complex Example](../../examples/advanced/complex-example.md) - Advanced usage
+- [Hello World Example](../../tests/basic/hello-world.md) - Simple introduction
+- [Complex Example](../../tests/advanced/complex-example.md) - Advanced usage
 
 ## Configuration
 
@@ -51,9 +51,9 @@ Click on any link to navigate to other markdown files. The system supports:
 - Anchor links like `[text](file.md#section)`
 
 ### Where can I find examples?
-Check the [examples directory](../../examples/):
-- [Basic examples](../../examples/basic/)
-- [Advanced examples](../../examples/advanced/)
+Check the [tests directory](../../tests/):
+- [Basic examples](../../tests/basic/)
+- [Advanced examples](../../tests/advanced/)
 
 ## Next Steps
 

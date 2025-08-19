@@ -42,8 +42,8 @@ This project demonstrates comprehensive markdown link navigation with various fi
 ## Examples
 
 Check out our examples:
-- [Basic Example](examples/basic/hello-world.md)
-- [Advanced Example](examples/advanced/complex-example.md)
+- [Basic Example](../tests/basic/hello-world.md)
+- [Advanced Example](../tests/advanced/complex-example.md)
 
 ## API Reference
 

@@ -4,8 +4,8 @@ Testing various code block syntax highlighting and rendering.
 
 ## Navigation
 - [🏠 Back to Main Index](../index.md)
-- [📊 Native Graph Examples](../examples/graphs/native_graphs.md)
-- [📈 Mermaid Graph Examples](../examples/graphs/mermaid_graphs.md)
+- [📊 Native Graph Examples](../graphs/native_graphs.md)
+- [📈 Mermaid Graph Examples](../graphs/mermaid_graphs.md)
 
 ## Plain Code Block (no language)
 

@@ -24,10 +24,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
+  // Check if a file was passed as argument (for "Open with" functionality)
+  if (command_line_arguments.size() > 0) {
+    // The first argument after the executable is the file path
+    std::string file_path = command_line_arguments[0];
+    // TODO: Pass this to Flutter via method channel after window creation
+  }
+
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"md_tool", origin, size)) {
+  if (!window.Create(L"MDTool", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

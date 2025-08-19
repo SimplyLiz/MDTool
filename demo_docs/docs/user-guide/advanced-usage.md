@@ -40,7 +40,7 @@ Advanced configuration options for power users:
 
 ### Complex Documentation Structures
 See how we handle complex navigation:
-- [Complex Example](../../examples/advanced/complex-example.md) - Comprehensive example
+- [Complex Example](../../tests/advanced/complex-example.md) - Comprehensive example
 - [Tutorial 02](../../guides/tutorials/tutorial-02.md) - Advanced tutorial content
 
 ### API Integration Examples
@@ -89,7 +89,7 @@ For performance optimization:
 
 ### Bulk Navigation
 - [All Tutorials](../../guides/tutorials/) - Complete tutorial collection
-- [All Examples](../../examples/) - Comprehensive examples
+- [All Examples](../../tests/) - Comprehensive examples
 - [Complete API Reference](../../api/) - Full API documentation
 
 ### Advanced Customization
@@ -111,8 +111,8 @@ For performance optimization:
 ### Tutorials and Examples
 - [Tutorial 01](../../guides/tutorials/tutorial-01.md) - Basic tutorial
 - [Tutorial 02](../../guides/tutorials/tutorial-02.md) - Advanced tutorial
-- [Hello World](../../examples/basic/hello-world.md) - Simple example
-- [Complex Example](../../examples/advanced/complex-example.md) - Advanced example
+- [Hello World](../../tests/basic/hello-world.md) - Simple example
+- [Complex Example](../../tests/advanced/complex-example.md) - Advanced example
 
 ---
 

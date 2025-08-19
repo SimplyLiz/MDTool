@@ -34,7 +34,7 @@ For details, see [API Overview](api-overview.md#rate-limiting).
 
 ## Related Documentation
 - [API Overview](api-overview.md) - Complete API guide
-- [Examples](../../examples/advanced/complex-example.md) - Integration examples
+- [Examples](../../tests/advanced/complex-example.md) - Integration examples
 - [Troubleshooting](../../guides/how-to/troubleshooting.md) - Common issues
 
 ---

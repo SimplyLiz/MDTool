@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../graph_renderer.dart';
-import 'dart:convert';
+import '../webview_pool.dart';
 
 /// Mermaid graph renderer using WebView
 class MermaidRenderer extends GraphRenderer {
@@ -37,7 +36,7 @@ class MermaidRenderer extends GraphRenderer {
     BuildContext context, {
     GraphRenderOptions? options,
   }) async {
-    return _MermaidWebView(
+    return _PooledMermaidWebView(
       content: content,
       theme: options?.theme ?? 
           (Theme.of(context).brightness == Brightness.dark ? 'dark' : 'light'),
@@ -119,285 +118,101 @@ class MermaidRenderer extends GraphRenderer {
   
 }
 
-class _MermaidWebView extends StatefulWidget {
+class _PooledMermaidWebView extends StatefulWidget {
   final String content;
   final String theme;
   final GraphRenderOptions? options;
 
-  const _MermaidWebView({
+  const _PooledMermaidWebView({
     required this.content,
     required this.theme,
     this.options,
   });
 
   @override
-  State<_MermaidWebView> createState() => _MermaidWebViewState();
+  State<_PooledMermaidWebView> createState() => _PooledMermaidWebViewState();
 }
 
-class _MermaidWebViewState extends State<_MermaidWebView> {
-  late WebViewController controller;
+class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
+  WebViewController? controller;
   double height = 400; // Initial height
+  final WebViewPool _pool = WebViewPool();
+  bool _isLoading = true;
+  late final String _channelName; // Unique channel name for this instance
 
   @override
   void initState() {
     super.initState();
+    _channelName = 'HeightChannel_${DateTime.now().millisecondsSinceEpoch}_$hashCode';
     _initializeWebView();
   }
 
-  void _initializeWebView() async {
-    controller = WebViewController();
-    final html = await _generateMermaidHTML(widget.content, widget.theme, widget.options);
-    
-    await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
-    
-    // Add JavaScript channel to receive height updates
-    await controller.addJavaScriptChannel(
-      'HeightChannel',
-      onMessageReceived: (JavaScriptMessage message) {
-        final newHeight = double.tryParse(message.message);
-        if (newHeight != null && mounted) {
-          setState(() {
-            height = newHeight;
-          });
-        }
-      },
-    );
-    
-    await controller.setNavigationDelegate(
-      NavigationDelegate(
-        onPageFinished: (url) {
-          // Minimal delay for DOM readiness
-          Future.delayed(const Duration(milliseconds: 100), () {
-            final escapedContent = _escapeContent(widget.content);
-            controller.runJavaScript('''
-              if (window.renderMermaid) {
-                window.renderMermaid(`$escapedContent`);
-              }
-            ''');
-          });
-        },
-      ),
-    );
-    
-    await controller.loadHtmlString(html);
+  @override
+  void dispose() {
+    // Return controller to pool for reuse
+    if (controller != null) {
+      _pool.returnController(controller!);
+    }
+    super.dispose();
   }
 
-  Future<String> _generateMermaidHTML(String content, String theme, GraphRenderOptions? options) async {
-    final bgColor = options?.backgroundColorCss ?? 'transparent';
-    
-    // Load mermaid.js content from assets
-    String mermaidJS;
+  void _initializeWebView() async {
     try {
-      mermaidJS = await rootBundle.loadString('assets/js/mermaid.min.js');
-    } catch (e) {
-      // Fallback to CDN if asset loading fails
-      debugPrint('Failed to load local mermaid.js, falling back to CDN: $e');
-      mermaidJS = '';
-    }
-    
-    final mermaidConfig = {
-      'startOnLoad': false,
-      'theme': 'base',
-      'securityLevel': 'loose',
-      'suppressErrorRendering': true,
-      'maxEdges': 500,
-      'themeVariables': theme == 'dark' ? {
-        'primaryColor': '#bb86fc',
-        'primaryTextColor': '#ffffff',
-        'primaryBorderColor': '#03dac6',
-        'lineColor': '#ffffff',
-        'secondaryColor': '#03dac6',
-        'tertiaryColor': '#1f1f1f',
-        'background': bgColor,
-        'mainBkg': bgColor,
-        'secondBkg': bgColor,
-        'tertiaryBkg': bgColor,
-        'edgeLabelBackground': bgColor,
-      } : {
-        'primaryColor': '#6366f1',
-        'primaryTextColor': '#ffffff',
-        'primaryBorderColor': '#4f46e5',
-        'lineColor': '#374151',
-        'secondaryColor': '#10b981',
-        'tertiaryColor': '#f3f4f6',
-        'background': bgColor,
-        'mainBkg': bgColor,
-        'secondBkg': bgColor,
-        'tertiaryBkg': bgColor,
-        'edgeLabelBackground': bgColor,
-      },
-      'flowchart': {
-        'htmlLabels': true,
-        'useMaxWidth': false,
-        'curve': 'linear',
-      },
-      'sequence': {
-        'diagramMarginX': 50,
-        'diagramMarginY': 10,
-        'actorMargin': 50,
-        'width': 150,
-        'height': 65,
-        'boxMargin': 10,
-        'boxTextMargin': 5,
-        'noteMargin': 10,
-        'messageMargin': 35,
-        'mirrorActors': true,
-        'bottomMarginAdj': 1,
-        'useMaxWidth': false,
-      },
-      'gantt': {
-        'useMaxWidth': false,
-      },
-    };
-    
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            margin: 0;
-            padding: 16px;
-            background: $bgColor;
-            color: ${theme == 'dark' ? '#ffffff' : '#000000'};
-            overflow: hidden;
-            min-height: 200px;
-            height: auto;
-        }
-        
-        #mermaid-container {
-            width: 100%;
-            max-width: 100vw;
-            overflow-x: auto;
-            overflow-y: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 0;
-        }
-        
-        #mermaid-graph {
-            width: auto;
-            min-width: 100%;
-            height: auto;
-        }
-        
-        /* Force responsive scaling with proper overrides */
-        #mermaid-graph svg {
-            max-width: none !important;
-            width: 100% !important;
-            height: auto !important;
-            display: block;
-        }
-        
-        /* Ensure text remains readable */
-        #mermaid-graph svg text {
-            font-size: 14px !important;
-        }
-        
-        /* Custom styling for better integration */
-        .node rect,
-        .node circle,
-        .node ellipse,
-        .node polygon {
-            stroke-width: 2px;
-        }
-        
-        .edgePath .path {
-            stroke-width: 2px;
-        }
-        
-        .error-message {
-            color: #ef4444;
-            background: ${theme == 'dark' ? '#1f1f1f' : '#fef2f2'};
-            border: 1px solid #ef4444;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 16px;
-            font-family: monospace;
-        }
-    </style>
-</head>
-<body>
-    <div id="mermaid-container">
-        <div id="mermaid-graph">
-            Loading diagram...
-        </div>
-    </div>
-    
-    ${mermaidJS.isNotEmpty ? '<script>$mermaidJS</script>' : '<script src="https://unpkg.com/mermaid@10.9.1/dist/mermaid.min.js"></script>'}
-    <script>
-        // Wait for Mermaid to be available and initialize it
-        function initializeMermaid() {
-            try {
-                if (typeof mermaid === 'undefined') {
-                    showError('Mermaid library failed to load');
-                    return;
+      // Get controller from pool (much faster than creating new one)
+      controller = await _pool.getController();
+      
+      // Add a unique height channel for this instance
+      await controller!.addJavaScriptChannel(
+        _channelName,
+        onMessageReceived: (JavaScriptMessage message) {
+          final newHeight = double.tryParse(message.message);
+          if (newHeight != null && mounted) {
+            setState(() {
+              height = newHeight;
+            });
+          }
+        },
+      );
+      
+      // Get optimized HTML template
+      final html = await WebViewPool.getMermaidHTML(
+        widget.theme,
+        backgroundColorCss: widget.options?.backgroundColorCss,
+      );
+      
+      await controller!.setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (url) {
+            // Minimal delay for DOM readiness
+            Future.delayed(const Duration(milliseconds: 50), () {
+              final escapedContent = _escapeContent(widget.content);
+              controller!.runJavaScript('''
+                // Set the channel name for this chart instance
+                window.currentHeightChannel = '$_channelName';
+                if (window.renderMermaid) {
+                  window.renderMermaid(`$escapedContent`);
                 }
-                
-                mermaid.initialize(${jsonEncode(mermaidConfig)});
-            } catch (error) {
-                showError('Failed to initialize Mermaid: ' + error.message);
-            }
-        }
-        
-        // Initialize immediately when available
-        if (typeof mermaid !== 'undefined') {
-            initializeMermaid();
-        } else {
-            // Use proper event listener instead of timeout
-            document.addEventListener('DOMContentLoaded', initializeMermaid);
-        }
-        
-        async function renderMermaid(content) {
-            try {
-                const container = document.getElementById('mermaid-graph');
-                
-                // Use the modern mermaid.render API for better control
-                const { svg } = await mermaid.render('mermaid-diagram', content);
-                container.innerHTML = svg;
-                
-                // Apply responsive fixes immediately after render
-                requestAnimationFrame(() => {
-                    const svgElement = container.querySelector('svg');
-                    if (svgElement) {
-                        // Remove fixed dimensions and max-width constraints
-                        svgElement.removeAttribute('width');
-                        svgElement.removeAttribute('height');
-                        svgElement.style.maxWidth = 'none';
-                        svgElement.style.width = '100%';
-                        svgElement.style.height = 'auto';
-                        
-                        // Calculate actual content height and send to Flutter
-                        const svgBounds = svgElement.getBoundingClientRect();
-                        const contentHeight = svgBounds.height + 32; // Add padding
-                        const minHeight = Math.max(200, contentHeight);
-                        
-                        // Send height to Flutter via JavaScript channel
-                        if (window.HeightChannel) {
-                            window.HeightChannel.postMessage(minHeight.toString());
-                        }
-                    }
-                });
-            } catch (error) {
-                showError('Failed to render diagram: ' + error.message);
-            }
-        }
-        
-        function showError(message) {
-            const container = document.getElementById('mermaid-graph');
-            container.innerHTML = '<div class="error-message">' + message + '</div>';
-        }
-        
-        // Make renderMermaid available globally for WebView
-        window.renderMermaid = renderMermaid;
-    </script>
-</body>
-</html>
-    ''';
+              ''');
+            });
+          },
+        ),
+      );
+      
+      await controller!.loadHtmlString(html);
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to initialize pooled WebView: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   String _escapeContent(String content) {
@@ -409,10 +224,28 @@ class _MermaidWebViewState extends State<_MermaidWebView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading || controller == null) {
+      return Container(
+        width: widget.options?.width ?? double.infinity,
+        height: 200,
+        padding: const EdgeInsets.all(16),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 8),
+              Text('Loading Mermaid chart...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       width: widget.options?.width ?? double.infinity,
       height: widget.options?.height ?? height,
-      child: WebViewWidget(controller: controller),
+      child: WebViewWidget(controller: controller!),
     );
   }
 }

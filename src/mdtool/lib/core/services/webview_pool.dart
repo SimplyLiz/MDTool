@@ -259,15 +259,29 @@ class WebViewPool {
                         svgElement.removeAttribute('height');
                         svgElement.style.height = 'auto';
                         
-                        // Apply smart scaling for tall charts
-                        if (aspectRatio < 1.0) { // Tall chart
+                        // Check if this is a timeline/gantt chart by looking at the content
+                        const containerText = container.textContent || '';
+                        const isTimelineChart = containerText.includes('timeline') || 
+                                               containerText.includes('gantt') ||
+                                               svgElement.querySelector('.gantt') !== null ||
+                                               svgElement.querySelector('.timeline') !== null;
+                        
+                        // Apply smart scaling based on chart type and aspect ratio
+                        if (isTimelineChart || aspectRatio > 2.0) {
+                            // Timeline/gantt charts and very wide charts need full width
+                            svgElement.style.width = '100%';
+                            svgElement.style.maxWidth = 'none';
+                        } else if (aspectRatio < 0.8) {
+                            // Very tall charts
                             const targetMaxHeight = 400;
                             const optimalWidth = Math.min(600, targetMaxHeight * aspectRatio);
                             svgElement.style.maxWidth = optimalWidth + 'px';
                             svgElement.style.width = 'auto';
-                        } else { // Wide or square chart
-                            svgElement.style.width = '100%';
-                            svgElement.style.maxWidth = 'none';
+                        } else {
+                            // Square/circular charts (pie charts, moderate flowcharts)
+                            const targetMaxWidth = 500;
+                            svgElement.style.maxWidth = targetMaxWidth + 'px';
+                            svgElement.style.width = 'auto';
                         }
                         
                         // Calculate and send height to Flutter

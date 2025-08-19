@@ -115,7 +115,6 @@ class GraphRendererRegistry {
     // Remove existing renderer of same type
     _renderers.removeWhere((r) => r.type == renderer.type);
     _renderers.add(renderer);
-    debugPrint('Graph renderer registered: ${renderer.type} (${renderer.displayName})');
   }
   
   /// Unregister a renderer by type
@@ -266,17 +265,14 @@ class GraphRenderingService {
   Future<void> initialize() async {
     if (_initialized) return;
     
-    debugPrint('Initializing GraphRenderingService...');
     await _registerAvailableRenderers();
     _initialized = true;
-    debugPrint('GraphRenderingService initialized with ${_registry.renderers.length} renderers');
   }
   
   /// Register all available renderers
   Future<void> _registerAvailableRenderers() async {
     // We can't import the renderers here due to circular dependencies
     // Instead, ensure the registry is shared globally and let renderers register themselves
-    debugPrint('GraphRenderingService: Registry ready, renderers will register on first use');
   }
   
   /// Create a markdown element builder that can render graphs

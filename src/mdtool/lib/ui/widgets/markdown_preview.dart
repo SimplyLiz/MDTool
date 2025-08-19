@@ -586,10 +586,8 @@ $html
 
     // Check if this block contains charts and render accordingly
     if (text.contains('```mermaid') || text.contains('```chart')) {
-      print('MarkdownPreview: Using SimpleChartRenderer for block with ${text.length} characters');
       // Use simple chart renderer for blocks with charts
       final widgets = SimpleChartRenderer.processMarkdown(text, context);
-      print('MarkdownPreview: SimpleChartRenderer returned ${widgets.length} widgets');
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: widgets,
@@ -603,6 +601,7 @@ $html
       styleSheet: _buildStyleSheet(context, preferences),
       extensionSet: md.ExtensionSet([...md.ExtensionSet.gitHubFlavored.blockSyntaxes, md.TableSyntax()], [md.EmojiSyntax(), ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes]),
       builders: {
+        'code': FencedCodeBlockBuilder(context: context),
         'img': ImageElementBuilder(),
       },
       onTapLink: (text, href, title) {

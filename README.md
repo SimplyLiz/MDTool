@@ -1,11 +1,12 @@
 # MDTool
 
-A minimal, native macOS Markdown viewer and editor built with Flutter, featuring AI-powered analytics, integrated chat functionality, and advanced document management capabilities.
+A cross-platform Markdown viewer and editor built with Flutter, featuring AI-powered analytics, integrated chat functionality, and advanced document management capabilities. Native integration with macOS Finder and Windows Explorer for seamless "Open with MDTool" functionality.
 
 ## Features
 
 ### Core Functionality
-- **Native macOS Integration**: Built specifically for macOS with native UI components and system integration
+- **Cross-Platform Support**: Native builds for macOS and Windows with platform-specific integrations
+- **File Association**: Seamless "Open with MDTool" integration in macOS Finder and Windows Explorer
 - **Markdown Editing & Preview**: Real-time markdown editing with live preview and syntax highlighting
 - **Split Screen View**: Side-by-side editing and preview modes
 - **File Management**: Comprehensive file browser with folder navigation and recent items tracking
@@ -26,9 +27,16 @@ A minimal, native macOS Markdown viewer and editor built with Flutter, featuring
 
 ## Requirements
 
-- **macOS**: macOS 10.15 or later
+### All Platforms
 - **Flutter**: Flutter 3.8.1 or later
 - **Dart SDK**: 3.8.1 or later
+
+### macOS
+- **macOS**: macOS 10.15 or later
+
+### Windows  
+- **Windows**: Windows 10/11 (64-bit)
+- **NSIS**: For building the installer (optional)
 
 ## Installation
 
@@ -62,17 +70,61 @@ A minimal, native macOS Markdown viewer and editor built with Flutter, featuring
 
 ## Building
 
-### Development Build
+### macOS
+
+#### Development Build
 ```bash
 flutter build macos --debug
 ```
 
-### Release Build
+#### Release Build
 ```bash
 flutter build macos --release
 ```
 
-The built application will be available in `build/macos/Build/Products/Release/md_tool.app`
+The built application will be available in `build/macos/Build/Products/Release/MDTool.app`
+
+#### File Associations (macOS)
+File associations are automatically configured in the app's `Info.plist`. After building, the app will appear in Finder's "Open With" menu for Markdown files (.md, .markdown, .mdown, .mkd, .mkdn).
+
+### Windows
+
+#### Development Build
+```bash
+flutter build windows --debug
+```
+
+#### Release Build
+```bash
+flutter build windows --release
+```
+
+#### Windows Installer
+To create a professional Windows installer with automatic file associations:
+
+1. **Install NSIS** (if not already installed):
+   - Download from: https://nsis.sourceforge.io/Download
+   - Install to default location
+
+2. **Build the installer**:
+   ```cmd
+   flutter build windows --release
+   cd src/mdtool/windows
+   build_installer.bat
+   ```
+
+3. **Installer Output**: `MDTool-1.0.0-win64.exe`
+
+The installer includes:
+- MDTool application and dependencies
+- Automatic file associations for Markdown files
+- "Open with MDTool" context menu in Windows Explorer
+- Start Menu shortcuts
+- Desktop shortcut (optional)
+- Clean uninstaller
+
+#### Manual Windows Setup
+If you prefer not to use the installer, see `src/mdtool/windows/README_Windows_Setup.md` for manual file association setup.
 
 ## Project Structure
 
@@ -91,6 +143,14 @@ src/mdtool/
 │   │   └── widgets/            # Reusable UI widgets
 │   └── main.dart               # Application entry point
 ├── macos/                      # macOS-specific configuration
+│   └── Runner/
+│       ├── Info.plist          # File associations for macOS
+│       └── AppDelegate.swift   # File opening handler
+├── windows/                    # Windows-specific configuration
+│   ├── CMakeLists.txt          # CPack installer configuration
+│   ├── installer.nsi           # NSIS installer script
+│   ├── build_installer.bat     # Installer build script
+│   └── README_Installer.md     # Windows installer docs
 ├── test/                       # Unit and widget tests
 └── scripts/                    # Build and deployment scripts
 ```

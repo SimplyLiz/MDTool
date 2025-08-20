@@ -156,29 +156,6 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
           ),
           // PDF export - hide on very narrow screens  
           if (!isVeryNarrow) IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: () => _exportToPDF(context, ref), tooltip: 'Export PDF'),
-          // Chat buttons - only show on wider screens to prevent overflow
-          if (!isNarrow) Consumer(
-            builder: (context, ref, child) {
-              final preferences = ref.watch(preferencesProvider).valueOrNull;
-              final isOllamaEnabled = preferences?.ollamaEnabled ?? false;
-
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.chat, color: isOllamaEnabled ? Theme.of(context).colorScheme.primary : null),
-                    onPressed: () => _showDocumentChat(context, ref),
-                    tooltip: 'Document Chat',
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.smart_toy, color: isOllamaEnabled ? Theme.of(context).colorScheme.primary : null),
-                    onPressed: () => _showOllamaAssistant(context, ref),
-                    tooltip: 'Ollama Assistant',
-                  ),
-                ],
-              );
-            },
-          ),
         ],
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),

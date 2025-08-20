@@ -264,7 +264,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
               child: Icon(
                 folder.isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
                 size: 16,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(width: 4),
@@ -296,7 +296,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           folder.name,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         subtitle: subtitleText != null 
@@ -304,7 +304,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
               subtitleText, 
               style: TextStyle(
                 fontSize: 11, 
-                color: isScanning ? Theme.of(context).colorScheme.primary : Colors.grey[600],
+                color: isScanning ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 fontStyle: isScanning ? FontStyle.italic : FontStyle.normal,
               )
             )
@@ -375,13 +375,13 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
       leading: Icon(
         Icons.description, 
         size: 16, 
-        color: isCurrentFile ? Theme.of(context).colorScheme.primary : Colors.grey[600]
+        color: isCurrentFile ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)
       ),
       title: Text(
         file.name,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           fontWeight: isCurrentFile ? FontWeight.w600 : FontWeight.normal, 
-          color: isCurrentFile ? Theme.of(context).colorScheme.primary : null,
+          color: isCurrentFile ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
         ),
       ),
       selected: isSelected,
@@ -397,11 +397,11 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
         children: [
           Icon(Icons.folder_open, size: 48, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text('No directory selected', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+          Text('No directory selected', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 14)),
           const SizedBox(height: 8),
           Text(
             'Open a markdown file or select a folder to explore',
-            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 12),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),

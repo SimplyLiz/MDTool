@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io';
@@ -20,6 +21,16 @@ void main() async {
   
   // Initialize preferences service
   final preferencesService = await PreferencesService.getInstance();
+  
+  // Set up method channel for file opening
+  const platform = MethodChannel('open_file_channel');
+  platform.setMethodCallHandler((call) async {
+    if (call.method == "openFile") {
+      final filePath = call.arguments as String;
+      // TODO: Implement file opening logic
+      print("Received file to open: $filePath");
+    }
+  });
   
   runApp(
     ProviderScope(
@@ -54,7 +65,7 @@ class MDToolApp extends ConsumerWidget {
         }
         
         return MaterialApp(
-          title: 'MD Tool',
+          title: 'MDTool',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeMode,
@@ -79,7 +90,7 @@ class MDToolApp extends ConsumerWidget {
         );
       },
       loading: () => MaterialApp(
-        title: 'MD Tool',
+        title: 'MDTool',
         theme: AppTheme.lightTheme,
         home: const Scaffold(
           body: Center(
@@ -89,7 +100,7 @@ class MDToolApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
       ),
       error: (error, stack) => MaterialApp(
-        title: 'MD Tool',
+        title: 'MDTool',
         theme: AppTheme.lightTheme,
         home: Scaffold(
           body: Center(

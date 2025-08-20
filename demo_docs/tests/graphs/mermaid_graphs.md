@@ -1,11 +1,11 @@
 # Mermaid Graph Examples
 
 Comprehensive collection of graphs, charts, and diagrams using Mermaid syntax.
-
+dfd 
 ## Navigation
-- [🏠 Back to Main Index](../../index.md)
-- [📊 Native Graph Examples](native_graphs.md) - Non-Mermaid graphs
-- [👋 Hello World Example](../basic/hello-world.md)
+- [🏠 Back d to Main Index](../../index.md)
+- [dfdfdfdffd fdf df df 📊 Native Graph Examples](native_graphs.md) - Non-Mermaid graphs
+- [👋 Hello ss Example](../basic/hello-world.md)
 - [🔧 Complex Example](../advanced/complex-example.md)
 - [📚 Tutorial 01](../../guides/tutorials/tutorial-01.md)
 
@@ -26,7 +26,7 @@ This document demonstrates various types of graphs, charts, and diagrams that ca
 #### Basic Flowchart
 ```mermaid
 flowchart TD
-    A[Start] --> B{Decision}
+    A[Staart] --> B{Decision}
     B -->|Yes| C[Process A]
     B -->|No| D[Process B]
     C --> E[End]

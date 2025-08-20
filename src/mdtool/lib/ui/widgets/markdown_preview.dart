@@ -13,6 +13,8 @@ import '../../core/services/scroll_sync_service.dart';
 import '../../core/services/file_service.dart';
 import '../../core/services/block_index.dart';
 import 'fenced_code_block_builder.dart';
+import 'simple_chart_renderer.dart';
+import '../../core/services/graph_renderer.dart';
 
 class MarkdownPreview extends ConsumerStatefulWidget {
   const MarkdownPreview({super.key});
@@ -25,6 +27,7 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
   late ScrollController _scrollController;
   late ScrollSyncService _scrollSyncService;
   late BlockIndex _blockIndex;
+  late GraphRenderingService _graphService;
   int? _lastScrollRequestId;
   final GlobalKey _markdownKey = GlobalKey();
 
@@ -37,11 +40,26 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
     _scrollController = ScrollController();
     _scrollSyncService = ScrollSyncService();
     _scrollSyncService.registerPreviewController(_scrollController);
+    
+    // Initialize graph rendering service
+    _graphService = GraphRenderingService();
+    
+    // Initialize async and rebuild when done
+    _initializeGraphService();
 
     // Initialize block index with current content
     final appState = ref.read(appStateProvider);
     _blockIndex = buildBlockIndex(appState.content);
     _scrollSyncService.registerBlockIndex(_blockIndex);
+  }
+  
+  Future<void> _initializeGraphService() async {
+    await _graphService.initialize();
+    if (mounted) {
+      setState(() {
+        // Force rebuild after graph service is initialized
+      });
+    }
   }
 
   @override
@@ -566,7 +584,17 @@ $html
       return const SizedBox(height: 8); // Empty line spacing
     }
 
-    // Use flutter_markdown to render this block
+    // Check if this block contains charts and render accordingly
+    if (text.contains('```mermaid') || text.contains('```chart')) {
+      // Use simple chart renderer for blocks with charts
+      final widgets = SimpleChartRenderer.processMarkdown(text, context);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: widgets,
+      );
+    }
+    
+    // Use flutter_markdown for regular content
     return MarkdownBody(
       data: text,
       selectable: false,

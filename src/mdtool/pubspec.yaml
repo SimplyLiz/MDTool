@@ -69,6 +69,7 @@ dependencies:
   # Graph Rendering & Visualization
   webview_flutter: ^4.7.0
   graphview: ^1.2.0
+  fl_chart: ^0.69.0
   
   # Utilities
   equatable: ^2.0.5
@@ -103,9 +104,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/js/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -41,6 +41,7 @@ class GraphRenderOptions {
   final double? height;
   final String? theme; // 'light', 'dark', 'auto'
   final bool interactive;
+  final Color? backgroundColor;
   final Map<String, dynamic>? customOptions;
   
   const GraphRenderOptions({
@@ -48,6 +49,7 @@ class GraphRenderOptions {
     this.height,
     this.theme,
     this.interactive = true,
+    this.backgroundColor,
     this.customOptions,
   });
   
@@ -56,6 +58,7 @@ class GraphRenderOptions {
     double? height,
     String? theme,
     bool? interactive,
+    Color? backgroundColor,
     Map<String, dynamic>? customOptions,
   }) {
     return GraphRenderOptions(
@@ -63,8 +66,22 @@ class GraphRenderOptions {
       height: height ?? this.height,
       theme: theme ?? this.theme,
       interactive: interactive ?? this.interactive,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
       customOptions: customOptions ?? this.customOptions,
     );
+  }
+  
+  /// Convert background color to CSS string
+  String get backgroundColorCss {
+    if (backgroundColor == null) return 'transparent';
+    
+    final color = backgroundColor!;
+    final r = (color.r * 255.0).round() & 0xff;
+    final g = (color.g * 255.0).round() & 0xff;
+    final b = (color.b * 255.0).round() & 0xff;
+    final a = color.a;
+    
+    return 'rgba($r, $g, $b, $a)';
   }
 }
 
@@ -115,7 +132,6 @@ class GraphRendererRegistry {
     // Remove existing renderer of same type
     _renderers.removeWhere((r) => r.type == renderer.type);
     _renderers.add(renderer);
-    debugPrint('Graph renderer registered: ${renderer.type} (${renderer.displayName})');
   }
   
   /// Unregister a renderer by type
@@ -266,14 +282,21 @@ class GraphRenderingService {
   Future<void> initialize() async {
     if (_initialized) return;
     
-    debugPrint('Initializing GraphRenderingService...');
+    await _registerAvailableRenderers();
     _initialized = true;
-    debugPrint('GraphRenderingService initialized with ${_registry.renderers.length} renderers');
+  }
+  
+  /// Register all available renderers
+  Future<void> _registerAvailableRenderers() async {
+    // We can't import the renderers here due to circular dependencies
+    // Instead, ensure the registry is shared globally and let renderers register themselves
   }
   
   /// Create a markdown element builder that can render graphs
   dynamic createElementBuilder(BuildContext context) {
-    return GraphElementBuilder(service: this, context: context);
+    // This method is not used - element builders are created directly
+    // by the UI components that need them
+    throw UnimplementedError('Use GraphElementBuilder directly from ui/widgets/graph_element_builder.dart');
   }
   
   /// Render a graph with the given syntax and content
@@ -313,13 +336,13 @@ class GraphRenderingService {
   }
 }
 
-/// Placeholder for GraphElementBuilder - will be implemented in graph_element_builder.dart
-class GraphElementBuilder {
-  final GraphRenderingService service;
-  final BuildContext context;
+/// Static registry for renderers to register themselves
+class RendererRegistry {
+  static final GraphRendererRegistry _globalRegistry = GraphRendererRegistry();
   
-  GraphElementBuilder({
-    required this.service,
-    required this.context,
-  });
+  static void registerRenderer(GraphRenderer renderer) {
+    _globalRegistry.register(renderer);
+  }
+  
+  static GraphRendererRegistry get instance => _globalRegistry;
 }

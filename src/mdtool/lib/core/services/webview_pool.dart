@@ -47,6 +47,11 @@ class WebViewPool {
 
   /// Reset a controller for reuse
   void _resetController(WebViewController controller) {
+    // Best-effort reset to static mode before loading new content (ignore errors)
+    controller.runJavaScript(
+      'try{window.setInteractiveMode && window.setInteractiveMode(false);}catch(e){}'
+    );
+    
     // Clear any previous content but keep it simple to avoid conflicts
     controller.loadHtmlString('''
       <!DOCTYPE html>

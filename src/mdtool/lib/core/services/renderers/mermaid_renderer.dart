@@ -150,6 +150,11 @@ class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
 
   @override
   void dispose() {
+    // Best-effort reset to static mode before returning to pool (ignore errors if page changed)
+    controller?.runJavaScript(
+      'try{window.setInteractiveMode && window.setInteractiveMode(false);}catch(e){}'
+    );
+    
     // Return controller to pool for reuse
     if (controller != null) {
       _pool.returnController(controller!);

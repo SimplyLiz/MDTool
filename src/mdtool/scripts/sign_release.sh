@@ -10,7 +10,7 @@ flutter clean
 flutter build macos --release
 
 echo "🔒 Signing the application..."
-APP_PATH="build/macos/Build/Products/Release/md_tool.app"
+APP_PATH="build/macos/Build/Products/Release/MDTool.app"
 IDENTITY="Apple Development: Lisa Welsch (ZFWXPDVR85)"
 
 # First, sign all embedded frameworks that may have adhoc signatures

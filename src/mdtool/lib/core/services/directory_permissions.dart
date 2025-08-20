@@ -10,7 +10,7 @@ class DirectoryPermissionResult {
 }
 
 class DirectoryPermissions {
-  static const _channel = MethodChannel('md_tool/directory_permissions');
+  static const _channel = MethodChannel('mdtool/directory_permissions');
 
   static Future<List<DirectoryPermissionResult>> pick({bool multiple = true}) async {
     final res = await _channel.invokeMethod('pickDirectories', {'multiple': multiple});

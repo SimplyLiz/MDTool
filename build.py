@@ -993,8 +993,8 @@ Exits the build manager safely.
                 self.console.print(f"[bright_green]✅ Build completed in {duration:.1f}s![/bright_green]")
                 
                 # Copy to build directory
-                source_app = self.flutter_project / "build" / "macos" / "Build" / "Products" / "Release" / "md_tool.app"
-                dest_app = self.build_dir / "md_tool.app"
+                source_app = self.flutter_project / "build" / "macos" / "Build" / "Products" / "Release" / "MDTool.app"
+                dest_app = self.build_dir / "MDTool.app"
                 
                 if source_app.exists():
                     import shutil
@@ -1227,12 +1227,12 @@ Exits the build manager safely.
         """Deploy the app to /Applications folder"""
         self.console.print(f"\n[bold bright_yellow]Deploying to /Applications...[/bold bright_yellow]")
         
-        source_app = self.build_dir / "md_tool.app"
+        source_app = self.build_dir / "MDTool.app"
         if not source_app.exists():
             self.console.print("[bright_red]❌ App not found in build directory. Build first![/bright_red]")
             return
             
-        dest_app = Path("/Applications") / "md_tool.app"
+        dest_app = Path("/Applications") / "MDTool.app"
         
         try:
             import shutil
@@ -1254,7 +1254,7 @@ Exits the build manager safely.
                 
                 task = progress.add_task("Setting permissions...", total=None)
                 os.chmod(dest_app, 0o755)
-                executable_path = dest_app / "Contents" / "MacOS" / "md_tool"
+                executable_path = dest_app / "Contents" / "MacOS" / "MDTool"
                 if executable_path.exists():
                     os.chmod(executable_path, 0o755)
                 progress.remove_task(task)
@@ -1290,7 +1290,7 @@ Exits the build manager safely.
             flutter_version = flutter_result.stdout.split('\n')[0]
         
         # Check if built app exists
-        built_app = self.build_dir / "md_tool.app"
+        built_app = self.build_dir / "MDTool.app"
         app_status = "✅ Available" if built_app.exists() else "❌ Not built"
         
         # Get app size if it exists

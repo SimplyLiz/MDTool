@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 class DirectoryPermissionsService {
-  static const MethodChannel _channel = MethodChannel('md_tool/directory_permissions');
+  static const MethodChannel _channel = MethodChannel('mdtool/directory_permissions');
   static const String _bookmarksKey = 'directory_bookmarks';
 
   static DirectoryPermissionsService? _instance;

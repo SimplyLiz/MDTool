@@ -139,12 +139,10 @@ class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
   double height = 200; // Initial height, will be updated by JS
   final WebViewPool _pool = WebViewPool();
   bool _isLoading = true;
-  late final String _channelName; // Unique channel name for this instance
 
   @override
   void initState() {
     super.initState();
-    _channelName = 'HeightChannel_${DateTime.now().millisecondsSinceEpoch}_$hashCode';
     _initializeWebView();
   }
 
@@ -155,8 +153,9 @@ class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
       'try{window.setInteractiveMode && window.setInteractiveMode(false);}catch(e){}'
     );
     
-    // Return controller to pool for reuse
+    // Unbind height sink and return controller to pool for reuse
     if (controller != null) {
+      _pool.unbindHeightSink(controller!);
       _pool.returnController(controller!);
     }
     super.dispose();
@@ -167,18 +166,12 @@ class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
       // Get controller from pool (much faster than creating new one)
       controller = await _pool.getController();
       
-      // Add a unique height channel for this instance
-      await controller!.addJavaScriptChannel(
-        _channelName,
-        onMessageReceived: (JavaScriptMessage message) {
-          final newHeight = double.tryParse(message.message);
-          if (newHeight != null && mounted) {
-            setState(() {
-              height = newHeight;
-            });
-          }
-        },
-      );
+      // Bind height sink to this widget instance
+      _pool.bindHeightSink(controller!, (newHeight) {
+        if (mounted) {
+          setState(() => height = newHeight);
+        }
+      });
       
       // Get optimized HTML template
       final html = await WebViewPool.getMermaidHTML(
@@ -193,8 +186,6 @@ class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
             Future.delayed(const Duration(milliseconds: 50), () {
               final escapedContent = _escapeContent(widget.content);
               controller!.runJavaScript('''
-                // Set the channel name for this chart instance
-                window.currentHeightChannel = '$_channelName';
                 if (window.renderMermaid) {
                   window.renderMermaid(`$escapedContent`);
                 }

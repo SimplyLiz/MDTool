@@ -11,6 +11,7 @@ class WebViewPool {
   final List<WebViewController> _availableControllers = [];
   final Set<WebViewController> _usedControllers = {};
   final int _maxPoolSize = 3; // Reasonable limit for memory usage
+  final Map<WebViewController, void Function(double)> _heightSinks = {};
 
   /// Get a WebView controller from the pool or create a new one
   Future<WebViewController> getController() async {
@@ -39,10 +40,30 @@ class WebViewPool {
     }
   }
 
+  /// Bind a height callback to a controller
+  void bindHeightSink(WebViewController controller, void Function(double) sink) {
+    _heightSinks[controller] = sink;
+  }
+
+  /// Unbind height callback from a controller
+  void unbindHeightSink(WebViewController controller) {
+    _heightSinks.remove(controller);
+  }
+
   /// Initialize a new controller with standard settings
   Future<void> _initializeController(WebViewController controller) async {
     await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
-    // Don't add HeightChannel here - let individual charts manage their own channels
+    
+    await controller.addJavaScriptChannel(
+      'HeightChannel',
+      onMessageReceived: (JavaScriptMessage message) {
+        final height = double.tryParse(message.message);
+        final sink = _heightSinks[controller];
+        if (height != null && sink != null) {
+          sink(height);
+        }
+      },
+    );
   }
 
   /// Reset a controller for reuse
@@ -61,8 +82,8 @@ class WebViewPool {
       </html>
     ''');
     
-    // Note: We can't easily remove JavaScript channels, so we'll handle 
-    // channel conflicts in the renderer
+    // Don't remove the channel; just unbind any old sink
+    _heightSinks.remove(controller);
   }
 
   /// Generate mermaid HTML with proper theme configuration
@@ -302,8 +323,8 @@ class WebViewPool {
                             // Reduced minimum height for better auto-sizing
                             const minHeight = Math.max(100, contentHeight);
                             
-                            if (window.currentHeightChannel && window[window.currentHeightChannel]) {
-                                window[window.currentHeightChannel].postMessage(minHeight.toString());
+                            if (window.HeightChannel && window.HeightChannel.postMessage) {
+                                window.HeightChannel.postMessage(minHeight.toString());
                             }
                         }, 50);
                     }
@@ -394,6 +415,7 @@ class WebViewPool {
   void clearPool() {
     _availableControllers.clear();
     _usedControllers.clear();
+    _heightSinks.clear();
   }
 
   /// Get pool statistics for debugging

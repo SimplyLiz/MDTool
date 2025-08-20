@@ -16,7 +16,6 @@ class SimpleChartRenderer {
       _registry.register(MermaidRenderer());
       _registry.register(ChartRenderer());
       _registry.register(core_simple.SimpleChartRenderer());
-      print('SimpleChartRenderer: Registered ${_registry.renderers.length} renderers');
     }
   }
   
@@ -48,12 +47,9 @@ class SimpleChartRenderer {
         // Check if this is a chart language
         final renderer = _registry.findRenderer(language);
         if (renderer != null) {
-          print('SimpleChartRenderer: Found chart block - language: $language');
           final content = codeLines.join('\n');
-          print('SimpleChartRenderer: Adding chart widget for $language (content length: ${content.length})');
           widgets.add(_buildChartWidget(renderer, content, context));
         } else {
-          print('SimpleChartRenderer: No renderer for language $language, showing as code block');
           // Regular code block - add as text
           widgets.add(_buildCodeBlock(language, codeLines.join('\n')));
         }
@@ -146,7 +142,6 @@ class SimpleChartRenderer {
             }
             
             if (snapshot.hasError) {
-              print('SimpleChartRenderer: Error rendering ${renderer.type}: ${snapshot.error}');
               // Fallback to showing the content as a code block
               return _buildCodeBlock(renderer.type, content);
             }
@@ -216,8 +211,6 @@ class SimpleChartRenderer {
   
   static Future<Widget> _renderChart(GraphRenderer renderer, String content, BuildContext context) async {
     try {
-      print('SimpleChartRenderer: Starting render for ${renderer.type}');
-      print('SimpleChartRenderer: Content preview: ${content.substring(0, math.min(100, content.length))}...');
       
       final theme = Theme.of(context);
       final colorScheme = theme.colorScheme;
@@ -229,10 +222,8 @@ class SimpleChartRenderer {
       );
       
       final result = await renderer.render(content, context, options: options);
-      print('SimpleChartRenderer: Render completed successfully for ${renderer.type}');
       return result;
     } catch (e) {
-      print('SimpleChartRenderer: Render failed for ${renderer.type}: $e');
       rethrow;
     }
   }

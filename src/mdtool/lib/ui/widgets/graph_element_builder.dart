@@ -72,22 +72,13 @@ class GraphElementBuilder extends MarkdownElementBuilder {
     }
     
     // Try to render as graph first
-    debugPrint('GraphElementBuilder: Processing code block with language: $language');
-    debugPrint('GraphElementBuilder: Available renderers: ${registry.renderers.length}');
-    for (final r in registry.renderers) {
-      debugPrint('  - ${r.type}: ${r.supportedSyntaxes}');
-    }
     
     final renderer = registry.findRenderer(language);
     if (renderer != null) {
-      debugPrint('GraphElementBuilder: Found renderer ${renderer.type} for language $language');
-      debugPrint('GraphElementBuilder: Building graph widget...');
       final widget = _buildGraphWidget(renderer, code, language);
-      debugPrint('GraphElementBuilder: Graph widget built successfully');
       return widget;
     }
     
-    debugPrint('GraphElementBuilder: No renderer found for language $language, using syntax highlighting');
     // Fall back to syntax highlighting
     return _buildSyntaxHighlightedCode(code, language);
   }
@@ -102,22 +93,13 @@ class GraphElementBuilder extends MarkdownElementBuilder {
     }
     
     // Try to render as graph first
-    debugPrint('GraphElementBuilder: Processing code block with language: $language');
-    debugPrint('GraphElementBuilder: Available renderers: ${registry.renderers.length}');
-    for (final r in registry.renderers) {
-      debugPrint('  - ${r.type}: ${r.supportedSyntaxes}');
-    }
     
     final renderer = registry.findRenderer(language);
     if (renderer != null) {
-      debugPrint('GraphElementBuilder: Found renderer ${renderer.type} for language $language');
-      debugPrint('GraphElementBuilder: Building graph widget...');
       final widget = _buildGraphWidget(renderer, code, language);
-      debugPrint('GraphElementBuilder: Graph widget built successfully');
       return widget;
     }
     
-    debugPrint('GraphElementBuilder: No renderer found for language $language, using syntax highlighting');
     // Fall back to syntax highlighting
     return _buildSyntaxHighlightedCode(code, language);
   }
@@ -131,24 +113,19 @@ class GraphElementBuilder extends MarkdownElementBuilder {
   }
   
   Widget _buildGraphWidget(GraphRenderer renderer, String content, String? language) {
-    debugPrint('GraphElementBuilder: Creating StatefulBuilder for ${renderer.type}');
     return StatefulBuilder(
       builder: (context, setState) {
-        debugPrint('GraphElementBuilder: StatefulBuilder building for ${renderer.type}');
         return FutureBuilder<Widget>(
           future: _renderGraph(renderer, content, context),
           builder: (context, snapshot) {
-            debugPrint('GraphElementBuilder: FutureBuilder state: ${snapshot.connectionState}');
             
             if (snapshot.connectionState == ConnectionState.waiting) {
-              debugPrint('GraphElementBuilder: Showing loading widget');
               return GraphLoadingWidget(
                 message: 'Rendering ${renderer.displayName}...',
               );
             }
             
             if (snapshot.hasError) {
-              debugPrint('GraphElementBuilder: Error in rendering: ${snapshot.error}');
               return GraphErrorWidget(
                 error: snapshot.error.toString(),
                 content: content,
@@ -157,12 +134,10 @@ class GraphElementBuilder extends MarkdownElementBuilder {
             }
             
             if (snapshot.hasData) {
-              debugPrint('GraphElementBuilder: Successfully got rendered widget');
               return _buildCodeBlockStyle(snapshot.data!, language ?? '', content, context);
             }
             
             // Should not reach here, but fallback to code block
-            debugPrint('GraphElementBuilder: Fallback to code block');
             return _buildFallbackCodeBlock(content, language);
           },
         );
@@ -471,30 +446,22 @@ class _GraphCopyButtonState extends State<_GraphCopyButton> {
 /// Service for initializing graph renderers in the element builder
 class GraphElementService {
   static void ensureRenderersRegistered(GraphRendererRegistry registry) {
-    debugPrint('GraphElementService: Checking renderer registration (current: ${registry.renderers.length})');
     
     // Check if renderers are already registered
     if (registry.renderers.isNotEmpty) {
-      debugPrint('GraphElementService: Renderers already registered (${registry.renderers.length})');
       return;
     }
     
-    debugPrint('GraphElementService: Registering renderers...');
     
     // Register all available renderers
     try {
       registry.register(MermaidRenderer());
-      debugPrint('GraphElementService: Registered MermaidRenderer');
       
       registry.register(ChartRenderer());
-      debugPrint('GraphElementService: Registered ChartRenderer');
       
       registry.register(SimpleChartRenderer());
-      debugPrint('GraphElementService: Registered SimpleChartRenderer');
       
-      debugPrint('GraphElementService: Successfully registered ${registry.renderers.length} graph renderers');
     } catch (e) {
-      debugPrint('GraphElementService: Error registering renderers: $e');
     }
   }
 }

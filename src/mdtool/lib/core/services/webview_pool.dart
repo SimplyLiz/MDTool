@@ -342,67 +342,25 @@ class WebViewPool {
         // Make renderMermaid available globally for WebView
         window.renderMermaid = renderMermaid;
         
-        // Interactive mode control functions
+        // Interactive mode control functions - simplified since IgnorePointer handles gesture blocking
         window.setInteractiveMode = function(interactive) {
-            const pointerEvents = interactive ? 'auto' : 'none';
-            
-            // Set pointer events on all relevant elements
-            document.body.style.pointerEvents = pointerEvents;
-            
+            // Basic visual feedback - Flutter IgnorePointer handles gesture routing
             const container = document.getElementById('mermaid-container');
+            const body = document.body;
+            
+            // Only disable user selection in interactive mode for cleaner interaction
+            const userSelectValue = interactive ? 'none' : 'auto';
+            body.style.userSelect = userSelectValue;
+            body.style.webkitUserSelect = userSelectValue;
+            body.style.msUserSelect = userSelectValue;
+            
             if (container) {
-                container.style.pointerEvents = pointerEvents;
-                // Completely disable touch-action when interactive to let Flutter handle gestures
-                container.style.touchAction = interactive ? 'none' : 'auto';
-                container.style.webkitTouchAction = interactive ? 'none' : 'auto';
-                container.style.msTouchAction = interactive ? 'none' : 'auto';
+                container.style.userSelect = userSelectValue;
             }
             
-            const svgs = document.querySelectorAll('#mermaid-graph svg');
-            svgs.forEach(svg => {
-                svg.style.pointerEvents = pointerEvents;
-                // Disable WebView touch handling on SVG elements completely
-                svg.style.touchAction = interactive ? 'none' : 'auto';
-                svg.style.webkitTouchAction = interactive ? 'none' : 'auto';
-                svg.style.msTouchAction = interactive ? 'none' : 'auto';
-            });
-            
-            // Disable all default touch behaviors when interactive
-            document.body.style.touchAction = interactive ? 'none' : 'auto';
-            document.body.style.webkitTouchAction = interactive ? 'none' : 'auto';
-            document.body.style.msTouchAction = interactive ? 'none' : 'auto';
-            document.body.style.userSelect = interactive ? 'none' : 'auto';
-            document.body.style.webkitUserSelect = interactive ? 'none' : 'auto';
-            document.body.style.msUserSelect = interactive ? 'none' : 'auto';
-            
-            // Prevent all mouse and touch events in interactive mode
-            if (interactive) {
-                document.addEventListener('contextmenu', preventDefaultHandler, true);
-                document.addEventListener('selectstart', preventDefaultHandler, true);
-                document.addEventListener('touchstart', preventDefaultHandler, true);
-                document.addEventListener('touchmove', preventDefaultHandler, true);
-                document.addEventListener('touchend', preventDefaultHandler, true);
-                document.addEventListener('mousedown', preventDefaultHandler, true);
-                document.addEventListener('mousemove', preventDefaultHandler, true);
-                document.addEventListener('mouseup', preventDefaultHandler, true);
-                document.addEventListener('wheel', preventDefaultHandler, true);
-            } else {
-                document.removeEventListener('contextmenu', preventDefaultHandler, true);
-                document.removeEventListener('selectstart', preventDefaultHandler, true);
-                document.removeEventListener('touchstart', preventDefaultHandler, true);
-                document.removeEventListener('touchmove', preventDefaultHandler, true);
-                document.removeEventListener('touchend', preventDefaultHandler, true);
-                document.removeEventListener('mousedown', preventDefaultHandler, true);
-                document.removeEventListener('mousemove', preventDefaultHandler, true);
-                document.removeEventListener('mouseup', preventDefaultHandler, true);
-                document.removeEventListener('wheel', preventDefaultHandler, true);
-            }
+            // Optional: Add visual indicator class for styling
+            body.classList.toggle('interactive-mode', interactive);
         };
-        
-        function preventDefaultHandler(e) {
-            e.preventDefault();
-            return false;
-        }
         
         // Reset to static mode by default
         window.setInteractiveMode(false);

@@ -121,7 +121,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
   }
 
   void closeFile() {
-    _safeSetState(const AppState()); // This already sets isFolderSidebarVisible = false
+    _safeSetState(const AppState(isEditMode: true)); // Keep edit mode active when closing
   }
 
   void toggleSplitScreen() {

@@ -114,32 +114,42 @@ class WindowHeader extends ConsumerWidget {
                   ),
                   tooltip: _shouldEnableSave(appState) ? 'Save file' : 'No changes to save',
                 ),
-              if (onChat != null)
-                IconButton(
-                  iconSize: 16,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  padding: const EdgeInsets.all(4),
-                  onPressed: onChat,
-                  icon: Icon(
-                    Icons.chat_outlined,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  tooltip: 'Chat with this file',
+              // Three-dot menu
+              PopupMenuButton<String>(
+                iconSize: 16,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: const EdgeInsets.all(4),
+                icon: Icon(
+                  Icons.more_vert,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-              if (onOpenFile != null)
-                IconButton(
-                  iconSize: 16,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  padding: const EdgeInsets.all(4),
-                  onPressed: onOpenFile,
-                  icon: Icon(
-                    Icons.folder_open_outlined,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                tooltip: 'More options',
+                onSelected: (value) => _handleMenuSelection(value, context, ref),
+                itemBuilder: (context) => [
+                  if (onChat != null)
+                    const PopupMenuItem<String>(
+                      value: 'chat',
+                      child: Row(
+                        children: [
+                          Icon(Icons.chat_outlined, size: 16),
+                          SizedBox(width: 8),
+                          Text('Chat about this file'),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuItem<String>(
+                    value: 'export_pdf',
+                    child: Row(
+                      children: [
+                        Icon(Icons.picture_as_pdf_outlined, size: 16),
+                        SizedBox(width: 8),
+                        Text('Export as PDF'),
+                      ],
+                    ),
                   ),
-                  tooltip: 'Open file',
-                ),
+                ],
+              ),
               if (onClose != null)
                 IconButton(
                   iconSize: 16,
@@ -190,6 +200,28 @@ class WindowHeader extends ConsumerWidget {
         // Preview window can save the primary file if it has changes
         return appState.isDirty && appState.currentFile != null;
     }
+  }
+
+  void _handleMenuSelection(String value, BuildContext context, WidgetRef ref) {
+    switch (value) {
+      case 'chat':
+        if (onChat != null) {
+          onChat!();
+        }
+        break;
+      case 'export_pdf':
+        _exportAsPdf(context, ref);
+        break;
+    }
+  }
+
+  void _exportAsPdf(BuildContext context, WidgetRef ref) {
+    // TODO: Implement PDF export functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('PDF export functionality coming soon'),
+      ),
+    );
   }
 }
 

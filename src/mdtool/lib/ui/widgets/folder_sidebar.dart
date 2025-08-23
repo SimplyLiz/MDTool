@@ -676,10 +676,20 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
   }
   
   Future<void> _openFile(String filePath) async {
+    if (!mounted) return;
+    
     try {
       final fileService = FileService();
       final content = await fileService.readFile(filePath);
-      ref.read(appStateProvider.notifier).openFile(filePath, content);
+      
+      if (!mounted) return;
+      
+      // Use the confirmation method if there are unsaved changes
+      final success = await ref.read(appStateProvider.notifier).openFileWithConfirmation(context, filePath, content);
+      if (!success) {
+        // User cancelled, don't show any error message
+        return;
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -921,11 +931,13 @@ Start writing your markdown content here...
   }
   
   Future<void> _createNewFolder(String parentPath) async {
-    final TextEditingController controller = TextEditingController(text: 'New Folder');
+    String? newName;
     
-    final newName = await showDialog<String>(
+    await showDialog<String>(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
+        final TextEditingController controller = TextEditingController(text: 'New Folder');
+        
         return AlertDialog(
           title: const Text('New Folder'),
           content: TextField(
@@ -935,15 +947,25 @@ Start writing your markdown content here...
               labelText: 'Folder Name',
               border: OutlineInputBorder(),
             ),
-            onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+            onSubmitted: (value) {
+              newName = value.trim();
+              Navigator.of(dialogContext).pop();
+            },
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              onPressed: () {
+                newName = controller.text.trim();
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Create'),
             ),
           ],
@@ -951,9 +973,7 @@ Start writing your markdown content here...
       },
     );
     
-    controller.dispose();
-    
-    if (newName == null || newName.isEmpty) {
+    if (newName == null || newName!.isEmpty) {
       return;
     }
     
@@ -1033,11 +1053,13 @@ Start writing your markdown content here...
     final folderName = folderPath.split('/').last;
     final parentPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
     
-    final TextEditingController controller = TextEditingController(text: folderName);
+    String? newName;
     
-    final newName = await showDialog<String>(
+    await showDialog<String>(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
+        final TextEditingController controller = TextEditingController(text: folderName);
+        
         return AlertDialog(
           title: const Text('Rename Folder'),
           content: TextField(
@@ -1047,15 +1069,25 @@ Start writing your markdown content here...
               labelText: 'Folder Name',
               border: OutlineInputBorder(),
             ),
-            onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+            onSubmitted: (value) {
+              newName = value.trim();
+              Navigator.of(dialogContext).pop();
+            },
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              onPressed: () {
+                newName = controller.text.trim();
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Rename'),
             ),
           ],
@@ -1063,9 +1095,7 @@ Start writing your markdown content here...
       },
     );
     
-    controller.dispose();
-    
-    if (newName == null || newName.isEmpty || newName == folderName) {
+    if (newName == null || newName!.isEmpty || newName == folderName) {
       return;
     }
     
@@ -1120,11 +1150,13 @@ Start writing your markdown content here...
         : '';
     final parentPath = filePath.substring(0, filePath.lastIndexOf('/'));
     
-    final TextEditingController controller = TextEditingController(text: fileNameWithoutExtension);
+    String? newName;
     
-    final newName = await showDialog<String>(
+    await showDialog<String>(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
+        final TextEditingController controller = TextEditingController(text: fileNameWithoutExtension);
+        
         return AlertDialog(
           title: const Text('Rename File'),
           content: Column(
@@ -1137,15 +1169,18 @@ Start writing your markdown content here...
                   labelText: 'File Name (without extension)',
                   border: OutlineInputBorder(),
                 ),
-                onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+                onSubmitted: (value) {
+                  newName = value.trim();
+                  Navigator.of(dialogContext).pop();
+                },
               ),
               if (fileExtension.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
                     'Extension: $fileExtension',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)
+                    style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(dialogContext).colorScheme.onSurface.withValues(alpha: 0.6)
                     ),
                   ),
                 ),
@@ -1153,11 +1188,18 @@ Start writing your markdown content here...
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              onPressed: () {
+                newName = controller.text.trim();
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Rename'),
             ),
           ],
@@ -1165,9 +1207,7 @@ Start writing your markdown content here...
       },
     );
     
-    controller.dispose();
-    
-    if (newName == null || newName.isEmpty || newName == fileNameWithoutExtension) {
+    if (newName == null || newName!.isEmpty || newName == fileNameWithoutExtension) {
       return;
     }
     

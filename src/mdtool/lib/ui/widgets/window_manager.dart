@@ -40,7 +40,7 @@ class WindowManager extends ConsumerWidget {
           : null,
       onSave: () => _saveFile(ref, context),
       onClose: appState.currentFile != null
-          ? () => ref.read(appStateProvider.notifier).closeFile()
+          ? () => _closeFileWithConfirmation(context, ref)
           : null,
       onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.primary),
       placeholder: appState.currentFile == null ? _buildPrimaryPlaceholder(context, ref) : null,
@@ -72,7 +72,7 @@ class WindowManager extends ConsumerWidget {
           : null,
       onSave: () => _saveFile(ref, context),
       onClose: appState.currentFile != null
-          ? () => ref.read(appStateProvider.notifier).closeFile()
+          ? () => _closeFileWithConfirmation(context, ref)
           : null,
       onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.primary),
     );
@@ -128,7 +128,7 @@ class WindowManager extends ConsumerWidget {
             : null,
         onSave: () => _saveSecondaryFile(ref, context),
         onClose: appState.secondaryFile != null
-            ? () => ref.read(appStateProvider.notifier).closeSecondaryFile()
+            ? () => _closeSecondaryFileWithConfirmation(context, ref)
             : null,
         onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.secondary),
         placeholder: _buildSecondaryPlaceholder(context, ref),
@@ -445,6 +445,14 @@ class WindowManager extends ConsumerWidget {
     } catch (e) {
       debugPrint('Error opening file in secondary pane: $e');
     }
+  }
+
+  void _closeFileWithConfirmation(BuildContext context, WidgetRef ref) async {
+    await ref.read(appStateProvider.notifier).closeFileWithConfirmation(context);
+  }
+
+  void _closeSecondaryFileWithConfirmation(BuildContext context, WidgetRef ref) async {
+    await ref.read(appStateProvider.notifier).closeSecondaryFileWithConfirmation(context);
   }
 
   void _saveFile(WidgetRef ref, BuildContext context) async {

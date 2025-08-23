@@ -130,7 +130,7 @@ class SplitScreenView extends ConsumerWidget {
                                       ? () => WindowHeaderActions.openChatWithFile(context, appState.secondaryFile)
                                       : null,
                                   onSave: () => _saveSecondaryFile(ref, context),
-                                  onClose: () => ref.read(appStateProvider.notifier).closeSecondaryFile(),
+                                  onClose: () => _closeSecondaryFileWithConfirmation(context, ref),
                                   onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.secondary),
                                 ),
                                 Expanded(
@@ -444,6 +444,10 @@ class SplitScreenView extends ConsumerWidget {
         );
       }
     }
+  }
+
+  void _closeSecondaryFileWithConfirmation(BuildContext context, WidgetRef ref) async {
+    await ref.read(appStateProvider.notifier).closeSecondaryFileWithConfirmation(context);
   }
 
   void _saveSecondaryFile(WidgetRef ref, BuildContext context) async {

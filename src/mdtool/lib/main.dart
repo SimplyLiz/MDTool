@@ -9,6 +9,9 @@ import 'ui/themes/app_theme.dart';
 import 'core/services/preferences_service.dart';
 import 'core/providers/preferences_provider.dart';
 import 'core/models/preferences.dart' as prefs;
+import 'core/providers/app_state_provider.dart';
+import 'core/services/file_service.dart';
+import 'core/models/app_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,7 +72,7 @@ class MDToolApp extends ConsumerWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeMode,
-          home: const MainPage(),
+          home: KeyboardShortcutsWrapper(child: const MainPage()),
           onGenerateRoute: (settings) {
             switch (settings.name) {
               case '/diff':
@@ -117,5 +120,139 @@ class MDToolApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
       ),
     );
+  }
+}
+
+// Intent classes for keyboard shortcuts
+class SaveIntent extends Intent {
+  const SaveIntent();
+}
+
+class KeyboardShortcutsWrapper extends ConsumerWidget {
+  final Widget child;
+
+  const KeyboardShortcutsWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Shortcuts(
+      shortcuts: <LogicalKeySet, Intent>{
+        // Cmd+S on Mac, Ctrl+S on Windows/Linux
+        LogicalKeySet(
+          Platform.isMacOS ? LogicalKeyboardKey.meta : LogicalKeyboardKey.control,
+          LogicalKeyboardKey.keyS,
+        ): const SaveIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          SaveIntent: CallbackAction<SaveIntent>(
+            onInvoke: (SaveIntent intent) => _handleSave(ref, context),
+          ),
+        },
+        child: child,
+      ),
+    );
+  }
+
+  void _handleSave(WidgetRef ref, BuildContext context) async {
+    final appState = ref.read(appStateProvider);
+    bool didSave = false;
+    
+    // Determine which file to save based on active window
+    switch (appState.activeWindow) {
+      case ActiveWindow.primary:
+        if (appState.currentFile != null && appState.isDirty) {
+          await _saveFile(ref, context, appState.currentFile!, appState.content);
+          didSave = true;
+        } else if (appState.currentFile != null && !appState.isDirty) {
+          _showNoChangesMessage(context, 'No changes to save');
+        } else {
+          _showNoFileMessage(context);
+        }
+        break;
+      case ActiveWindow.secondary:
+        if (appState.secondaryFile != null && appState.isSecondaryDirty) {
+          await _saveSecondaryFile(ref, context, appState.secondaryFile!, appState.secondaryContent);
+          didSave = true;
+        } else if (appState.secondaryFile != null && !appState.isSecondaryDirty) {
+          _showNoChangesMessage(context, 'No changes to save');
+        } else {
+          _showNoFileMessage(context);
+        }
+        break;
+      case ActiveWindow.preview:
+        // Preview window doesn't have editable content, save primary instead
+        if (appState.currentFile != null && appState.isDirty) {
+          await _saveFile(ref, context, appState.currentFile!, appState.content);
+          didSave = true;
+        } else if (appState.currentFile != null && !appState.isDirty) {
+          _showNoChangesMessage(context, 'No changes to save');
+        } else {
+          _showNoFileMessage(context);
+        }
+        break;
+    }
+  }
+
+  void _showNoChangesMessage(BuildContext context, String message) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  void _showNoFileMessage(BuildContext context) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No file is open to save'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveFile(WidgetRef ref, BuildContext context, String filePath, String content) async {
+    try {
+      final fileService = FileService();
+      await fileService.writeFile(filePath, content);
+      ref.read(appStateProvider.notifier).saveFile();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File saved successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save file: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveSecondaryFile(WidgetRef ref, BuildContext context, String filePath, String content) async {
+    try {
+      final fileService = FileService();
+      await fileService.writeFile(filePath, content);
+      ref.read(appStateProvider.notifier).saveSecondaryFile();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Secondary file saved successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save secondary file: $e')),
+        );
+      }
+    }
   }
 }

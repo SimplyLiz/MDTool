@@ -1,5 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/app_state.dart';
+import '../services/file_service.dart';
+import '../../ui/dialogs/save_changes_dialog.dart';
 import 'preferences_provider.dart';
 
 final appStateProvider = StateNotifierProvider<AppStateNotifier, AppState>((ref) {
@@ -122,6 +125,132 @@ class AppStateNotifier extends StateNotifier<AppState> {
 
   void closeFile() {
     _safeSetState(const AppState(isEditMode: true)); // Keep edit mode active when closing
+  }
+
+  /// Close file with save confirmation dialog if there are unsaved changes
+  Future<bool> closeFileWithConfirmation(BuildContext context) async {
+    if (!state.isDirty) {
+      closeFile();
+      return true;
+    }
+
+    final action = await SaveChangesDialog.show(
+      context,
+      fileName: state.currentFile,
+      isUntitled: state.currentFile == null || state.currentFile!.startsWith('Untitled-'),
+    );
+
+    switch (action) {
+      case SaveChangesAction.save:
+        try {
+          await _saveCurrentFile();
+          closeFile();
+          return true;
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to save file: $e')),
+            );
+          }
+          return false;
+        }
+      case SaveChangesAction.discard:
+        closeFile();
+        return true;
+      case SaveChangesAction.cancel:
+      case null:
+        return false;
+    }
+  }
+
+  /// Close secondary file with save confirmation dialog if there are unsaved changes
+  Future<bool> closeSecondaryFileWithConfirmation(BuildContext context) async {
+    if (!state.isSecondaryDirty) {
+      closeSecondaryFile();
+      return true;
+    }
+
+    final action = await SaveChangesDialog.show(
+      context,
+      fileName: state.secondaryFile,
+      isUntitled: state.secondaryFile == null || state.secondaryFile!.startsWith('Untitled-'),
+    );
+
+    switch (action) {
+      case SaveChangesAction.save:
+        try {
+          await _saveSecondaryFile();
+          closeSecondaryFile();
+          return true;
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to save file: $e')),
+            );
+          }
+          return false;
+        }
+      case SaveChangesAction.discard:
+        closeSecondaryFile();
+        return true;
+      case SaveChangesAction.cancel:
+      case null:
+        return false;
+    }
+  }
+
+  /// Open file with save confirmation dialog if current file has unsaved changes
+  Future<bool> openFileWithConfirmation(BuildContext context, String filePath, String content) async {
+    if (!state.isDirty) {
+      openFile(filePath, content);
+      return true;
+    }
+
+    final action = await SaveChangesDialog.show(
+      context,
+      fileName: state.currentFile,
+      isUntitled: state.currentFile == null || state.currentFile!.startsWith('Untitled-'),
+    );
+
+    switch (action) {
+      case SaveChangesAction.save:
+        try {
+          await _saveCurrentFile();
+          openFile(filePath, content);
+          return true;
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to save file: $e')),
+            );
+          }
+          return false;
+        }
+      case SaveChangesAction.discard:
+        openFile(filePath, content);
+        return true;
+      case SaveChangesAction.cancel:
+      case null:
+        return false;
+    }
+  }
+
+  /// Internal method to save the current file
+  Future<void> _saveCurrentFile() async {
+    if (state.currentFile == null) return;
+    
+    final fileService = FileService();
+    await fileService.writeFile(state.currentFile!, state.content);
+    saveFile();
+  }
+
+  /// Internal method to save the secondary file
+  Future<void> _saveSecondaryFile() async {
+    if (state.secondaryFile == null) return;
+    
+    final fileService = FileService();
+    await fileService.writeFile(state.secondaryFile!, state.secondaryContent);
+    saveSecondaryFile();
   }
 
   void toggleSplitScreen() {

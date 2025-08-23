@@ -132,7 +132,8 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
       if (_isInitialized && mounted) {
         try {
           _textController.text = _codeController.text;
-          ref.read(appStateProvider.notifier).updateContent(_codeController.text);
+          // Defer provider update to avoid modifying during build
+          Future(() => ref.read(appStateProvider.notifier).updateContent(_codeController.text));
           _updateLineStartOffsets(_codeController.text);
         } catch (e) {
           // Ignore updates after disposal
@@ -555,8 +556,12 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
     
     // Update editor content when app state changes
     if (_codeController.text != appState.content) {
-      _codeController.text = appState.content;
-      _textController.text = appState.content;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _codeController.text = appState.content;
+          _textController.text = appState.content;
+        }
+      });
       
       // Re-anchor after content changes
       WidgetsBinding.instance.addPostFrameCallback((_) {

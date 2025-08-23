@@ -27,6 +27,10 @@ All notable changes to this project will be documented in this file.
   - Professional creation dialog with validation
   - Recursive folder creation support
   - Automatic UI refresh to show new folders
+- **Window Header Menu** - Three-dot menu in window pane headers
+  - Moved "Chat about this file" functionality to dropdown menu
+  - Added "Export as PDF" option (placeholder implementation)
+  - Clean, organized header UI with more space
 
 ### Improved
 - Enhanced error handling and user feedback across all file operations
@@ -34,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - Improved async operation handling with proper context management
 - Professional UI consistency across all dialogs
 - Cross-platform compatibility for all file operations
+- Streamlined window header design by removing open file button
 
 ### Fixed
 - Fixed TextEditingController disposal issues in dialogs

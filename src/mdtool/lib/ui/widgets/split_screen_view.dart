@@ -307,18 +307,6 @@ class SplitScreenView extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          // Preview toggle
-          IconButton(
-            icon: Icon(
-              appState.isPreviewVisible ? Icons.preview : Icons.visibility,
-              size: 18,
-              color: appState.isPreviewVisible
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            onPressed: () => ref.read(appStateProvider.notifier).togglePreviewVisibility(),
-            tooltip: appState.isPreviewVisible ? 'Show Second File Editor' : 'Edit with Live Preview',
-          ),
           // Sync controls (only show in preview mode)
           _buildSyncControls(context, ref, appState),
         ],

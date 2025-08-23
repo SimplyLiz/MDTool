@@ -704,8 +704,29 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
         position.dx + 1,
         position.dy + 1,
       ),
-      items: [
-        PopupMenuItem(
+      items: <PopupMenuEntry<dynamic>>[
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.create_new_folder, size: 16),
+              SizedBox(width: 8),
+              Text('New Folder'),
+            ],
+          ),
+          onTap: () => _createNewFolder(folder.path),
+        ),
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.note_add, size: 16),
+              SizedBox(width: 8),
+              Text('New Document'),
+            ],
+          ),
+          onTap: () => _createNewDocument(folder.path),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.folder_open, size: 16),
@@ -715,7 +736,28 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           ),
           onTap: () => _setAsBaseFolder(folder.path),
         ),
-        PopupMenuItem(
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.open_in_new, size: 16),
+              SizedBox(width: 8),
+              Text('Reveal in Finder'),
+            ],
+          ),
+          onTap: () => _revealInFinder(folder.path),
+        ),
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16),
+              SizedBox(width: 8),
+              Text('Rename'),
+            ],
+          ),
+          onTap: () => _renameFolder(folder.path),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.delete_outline, size: 16, color: Colors.red),
@@ -725,7 +767,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           ),
           onTap: () => _deleteFolder(folder.path),
         ),
-        PopupMenuItem(
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.chat, size: 16),
@@ -748,8 +790,8 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
         position.dx + 1,
         position.dy + 1,
       ),
-      items: [
-        PopupMenuItem(
+      items: <PopupMenuEntry<dynamic>>[
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.open_in_new, size: 16),
@@ -759,7 +801,18 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           ),
           onTap: () => _openFile(file.path),
         ),
-        PopupMenuItem(
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16),
+              SizedBox(width: 8),
+              Text('Rename'),
+            ],
+          ),
+          onTap: () => _renameFile(file.path),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.delete_outline, size: 16, color: Colors.red),
@@ -769,7 +822,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           ),
           onTap: () => _deleteFile(file.path),
         ),
-        PopupMenuItem(
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.chat, size: 16),
@@ -820,6 +873,346 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Chat about file not yet implemented'))
       );
+    }
+  }
+  
+  Future<void> _createNewDocument(String folderPath) async {
+    try {
+      final fileService = FileService();
+      final newFilePath = '$folderPath/New Document.md';
+      
+      // Check if file already exists
+      final file = File(newFilePath);
+      if (await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A file named "New Document.md" already exists'))
+          );
+        }
+        return;
+      }
+      
+      // Create the new document with basic markdown content
+      const initialContent = '''# New Document
+
+Start writing your markdown content here...
+''';
+      
+      await fileService.writeFile(newFilePath, initialContent);
+      
+      // Refresh the folder to show the new file
+      await _refreshFolderContents(folderPath);
+      
+      // Open the new file
+      await _openFile(newFilePath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New document created and opened'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create new document: $e'))
+        );
+      }
+    }
+  }
+  
+  Future<void> _createNewFolder(String parentPath) async {
+    final TextEditingController controller = TextEditingController(text: 'New Folder');
+    
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('New Folder'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Folder Name',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    controller.dispose();
+    
+    if (newName == null || newName.isEmpty) {
+      return;
+    }
+    
+    try {
+      final newFolderPath = '$parentPath/$newName';
+      final newDirectory = Directory(newFolderPath);
+      
+      // Check if folder already exists
+      if (await newDirectory.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('A folder named "$newName" already exists'))
+          );
+        }
+        return;
+      }
+      
+      // Create the new folder
+      await newDirectory.create(recursive: true);
+      
+      // Refresh the parent folder to show the new folder
+      await _refreshFolderContents(parentPath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Folder "$newName" created successfully'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create folder: $e'))
+        );
+      }
+    }
+  }
+  
+  Future<void> _revealInFinder(String folderPath) async {
+    try {
+      if (Platform.isMacOS) {
+        await Process.run('open', [folderPath]);
+      } else if (Platform.isWindows) {
+        await Process.run('explorer', [folderPath]);
+      } else {
+        // Linux - try xdg-open
+        await Process.run('xdg-open', [folderPath]);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to reveal folder: $e'))
+        );
+      }
+    }
+  }
+  
+  Future<void> _refreshFolderContents(String folderPath) async {
+    // Find the folder tree item and refresh its contents
+    final flattenedItems = _treeController.getFlattenedVisibleItems();
+    for (final item in flattenedItems) {
+      if (item is FolderTreeItem && item.path == folderPath) {
+        // Mark as not loaded to force refresh
+        item.isLoaded = false;
+        item.children.clear();
+        
+        // If the folder is expanded, reload its contents
+        if (item.isExpanded) {
+          await _loadFolderContents(item);
+          setState(() {});
+        }
+        break;
+      }
+    }
+  }
+  
+  Future<void> _renameFolder(String folderPath) async {
+    final folderName = folderPath.split('/').last;
+    final parentPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
+    
+    final TextEditingController controller = TextEditingController(text: folderName);
+    
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Rename Folder'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Folder Name',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              child: const Text('Rename'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    controller.dispose();
+    
+    if (newName == null || newName.isEmpty || newName == folderName) {
+      return;
+    }
+    
+    try {
+      final oldDirectory = Directory(folderPath);
+      final newPath = '$parentPath/$newName';
+      final newDirectory = Directory(newPath);
+      
+      // Check if target already exists
+      if (await newDirectory.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('A folder named "$newName" already exists'))
+          );
+        }
+        return;
+      }
+      
+      // Rename the folder
+      await oldDirectory.rename(newPath);
+      
+      // Update the app state if this was the current folder root
+      final appState = ref.read(appStateProvider);
+      if (appState.currentFolderRoot == folderPath) {
+        ref.read(appStateProvider.notifier).setCurrentFolderRoot(newPath);
+      }
+      
+      // Refresh the parent folder to show the renamed folder
+      await _refreshFolderContents(parentPath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Folder renamed to "$newName"'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to rename folder: $e'))
+        );
+      }
+    }
+  }
+  
+  Future<void> _renameFile(String filePath) async {
+    final fileName = filePath.split('/').last;
+    final fileNameWithoutExtension = fileName.contains('.') 
+        ? fileName.substring(0, fileName.lastIndexOf('.'))
+        : fileName;
+    final fileExtension = fileName.contains('.') 
+        ? fileName.substring(fileName.lastIndexOf('.'))
+        : '';
+    final parentPath = filePath.substring(0, filePath.lastIndexOf('/'));
+    
+    final TextEditingController controller = TextEditingController(text: fileNameWithoutExtension);
+    
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Rename File'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'File Name (without extension)',
+                  border: OutlineInputBorder(),
+                ),
+                onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+              ),
+              if (fileExtension.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Extension: $fileExtension',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              child: const Text('Rename'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    controller.dispose();
+    
+    if (newName == null || newName.isEmpty || newName == fileNameWithoutExtension) {
+      return;
+    }
+    
+    try {
+      final oldFile = File(filePath);
+      final newFileName = '$newName$fileExtension';
+      final newPath = '$parentPath/$newFileName';
+      final newFile = File(newPath);
+      
+      // Check if target already exists
+      if (await newFile.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('A file named "$newFileName" already exists'))
+          );
+        }
+        return;
+      }
+      
+      // Rename the file
+      await oldFile.rename(newPath);
+      
+      // Update the app state if this was the current file
+      final appState = ref.read(appStateProvider);
+      if (appState.currentFile == filePath) {
+        // Read the content and update to new path
+        final fileService = FileService();
+        final content = await fileService.readFile(newPath);
+        ref.read(appStateProvider.notifier).openFile(newPath, content);
+      }
+      
+      // Refresh the parent folder to show the renamed file
+      await _refreshFolderContents(parentPath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File renamed to "$newFileName"'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to rename file: $e'))
+        );
+      }
     }
   }
   

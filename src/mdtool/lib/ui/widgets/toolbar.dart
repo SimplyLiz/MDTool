@@ -109,16 +109,6 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
         tooltip: appState.isFolderSidebarVisible ? 'Hide Folder Sidebar' : 'Show Folder Sidebar',
       ),
       actions: [
-        // New File button - always visible
-        if (!isVeryNarrow) IconButton(icon: const Icon(Icons.note_add), onPressed: () => _newFile(context, ref), tooltip: 'New File'),
-        // Add Folder button
-        if (!isNarrow) IconButton(icon: const Icon(Icons.folder_open), onPressed: () => _openFolder(context, ref), tooltip: 'Open Folder'),
-        // Diff Comparison button
-        if (!isNarrow) IconButton(
-          icon: const Icon(Icons.compare_arrows), 
-          onPressed: () => _openDiffComparison(context, ref), 
-          tooltip: 'Text Diff Comparison'
-        ),
         // AI Chat button - always visible
         Consumer(
           builder: (context, ref, child) {
@@ -134,14 +124,6 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
           },
         ),
         if (appState.currentFile != null) ...[
-          // Save - always visible when file is open
-          IconButton(icon: const Icon(Icons.save), onPressed: appState.isDirty ? () => _saveFile(context, ref) : null, tooltip: 'Save'),
-          // Mode toggle - always visible
-          IconButton(
-            icon: Icon(appState.isEditMode ? Icons.edit : Icons.preview, color: Theme.of(context).colorScheme.primary),
-            onPressed: () => appStateNotifier.toggleMode(),
-            tooltip: appState.isEditMode ? 'Switch to Preview (Cmd+R)' : 'Switch to Edit (Cmd+R)',
-          ),
           // Preview toggle - hide on narrow screens
           if (!isNarrow) IconButton(
             icon: Icon(appState.isPreviewVisible ? Icons.preview : Icons.preview_outlined, color: appState.isPreviewVisible ? Theme.of(context).colorScheme.primary : null),
@@ -154,8 +136,6 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
             onPressed: () => _openSplitScreen(context, ref),
             tooltip: appState.isSplitScreenMode && !appState.isPreviewVisible ? 'Exit Split Screen' : 'Open Second File',
           ),
-          // PDF export - hide on very narrow screens  
-          if (!isVeryNarrow) IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: () => _exportToPDF(context, ref), tooltip: 'Export PDF'),
         ],
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
@@ -168,6 +148,12 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
               case 'about':
                 _showAbout(context);
                 break;
+              case 'export_pdf':
+                _exportToPDF(context, ref);
+                break;
+              case 'diff_comparison':
+                _openDiffComparison(context, ref);
+                break;
               case 'show_html':
                 _showHTMLInBrowser(context, ref);
                 break;
@@ -177,7 +163,15 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'diff_comparison',
+              child: Row(children: [Icon(Icons.compare_arrows), SizedBox(width: 8), Text('Text Diff Comparison')]),
+            ),
             if (appState.currentFile != null) ...[
+              const PopupMenuItem(
+                value: 'export_pdf',
+                child: Row(children: [Icon(Icons.picture_as_pdf), SizedBox(width: 8), Text('Export PDF')]),
+              ),
               const PopupMenuItem(
                 value: 'show_html',
                 child: Row(children: [Icon(Icons.web), SizedBox(width: 8), Text('Show HTML in Browser')]),

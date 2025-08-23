@@ -98,6 +98,20 @@ class WindowHeader extends ConsumerWidget {
                   ),
                   tooltip: 'New file',
                 ),
+              // Toggle Edit/Preview button (only for editor windows)
+              if (windowType == WindowType.editor)
+                IconButton(
+                  iconSize: 16,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: const EdgeInsets.all(4),
+                  onPressed: () => ref.read(appStateProvider.notifier).toggleMode(),
+                  icon: Icon(
+                    appState.isEditMode ? Icons.preview : Icons.edit,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  tooltip: appState.isEditMode ? 'Switch to Preview (Cmd+R)' : 'Switch to Edit (Cmd+R)',
+                ),
               // Show Save button when file is loaded (but not in preview windows)
               if (filePath != null && onSave != null && windowType != WindowType.preview)
                 IconButton(

@@ -135,3 +135,4 @@ src/mdtool/android/fastlane/test_output
 # Build artifacts
 .build_manager/
 build/
+deploy/

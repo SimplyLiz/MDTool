@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/providers/app_state_provider.dart';
+import '../../core/models/app_state.dart';
 import '../../core/services/file_service.dart';
 import '../../core/services/native_bridge_service.dart';
 import '../../core/services/scroll_sync_service.dart';
@@ -142,6 +143,9 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
           tooltip: 'More options',
           onSelected: (value) {
             switch (value) {
+              case 'close_folder':
+                _closeFolder(context, ref);
+                break;
               case 'preferences':
                 _showPreferences(context);
                 break;
@@ -163,6 +167,14 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (context) => [
+            // Show Close Folder option only in project mode
+            if (appState.appMode == AppMode.project) ...[
+              const PopupMenuItem(
+                value: 'close_folder',
+                child: Row(children: [Icon(Icons.close), SizedBox(width: 8), Text('Close Folder')]),
+              ),
+              const PopupMenuDivider(),
+            ],
             const PopupMenuItem(
               value: 'diff_comparison',
               child: Row(children: [Icon(Icons.compare_arrows), SizedBox(width: 8), Text('Text Diff Comparison')]),
@@ -431,5 +443,9 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
     Navigator.of(context).pushNamed('/diff', arguments: args);
   }
 
+  void _closeFolder(BuildContext context, WidgetRef ref) {
+    final appStateNotifier = ref.read(appStateProvider.notifier);
+    appStateNotifier.closeFolderAndReturnToOverview();
+  }
 
 }

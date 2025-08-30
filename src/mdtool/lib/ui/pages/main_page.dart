@@ -12,6 +12,7 @@ import '../../core/providers/app_state_provider.dart';
 import '../../core/providers/preferences_provider.dart';
 import '../../core/models/recent_item.dart';
 import '../../core/models/favorite_item.dart';
+import '../../core/models/app_state.dart';
 import '../../core/services/file_service.dart';
 import '../../core/services/native_bridge_service.dart';
 import '../../core/services/scroll_sync_service.dart';
@@ -113,7 +114,7 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
                                     borderRadius: BorderRadius.circular(8),
                                   )
                                 : null,
-                            child: Container(padding: EdgeInsets.all(math.max(8.0, math.min(16.0, MediaQuery.of(context).size.width * 0.02))), child: appState.currentFile != null || appState.isFolderSidebarVisible ? const WindowManager() : _buildWelcomeView(ref)),
+                            child: Container(padding: EdgeInsets.all(math.max(8.0, math.min(16.0, MediaQuery.of(context).size.width * 0.02))), child: _buildMainContent(ref, appState)),
                           );
                         },
                       ),
@@ -135,6 +136,15 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
         ),
       ),
     );
+  }
+
+  Widget _buildMainContent(WidgetRef ref, AppState appState) {
+    switch (appState.appMode) {
+      case AppMode.overview:
+        return _buildWelcomeView(ref);
+      case AppMode.project:
+        return const WindowManager();
+    }
   }
 
   Widget _buildWelcomeView(WidgetRef ref) {

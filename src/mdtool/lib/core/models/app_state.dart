@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 enum ActiveWindow { primary, preview, secondary }
 
+enum AppMode { overview, project }
+
 class AppState extends Equatable {
   final String? currentFile;
   final String content;
@@ -23,6 +25,7 @@ class AppState extends Equatable {
   final String? droppedFolder;
   final String? currentFolderRoot;
   final ActiveWindow activeWindow;
+  final AppMode appMode;
 
   const AppState({
     this.currentFile,
@@ -45,6 +48,7 @@ class AppState extends Equatable {
     this.droppedFolder,
     this.currentFolderRoot,
     this.activeWindow = ActiveWindow.primary,
+    this.appMode = AppMode.overview,
   });
 
   AppState copyWith({
@@ -68,6 +72,7 @@ class AppState extends Equatable {
     String? droppedFolder,
     String? currentFolderRoot,
     ActiveWindow? activeWindow,
+    AppMode? appMode,
     bool clearDroppedFolder = false,
   }) {
     return AppState(
@@ -91,6 +96,7 @@ class AppState extends Equatable {
       droppedFolder: clearDroppedFolder ? null : (droppedFolder ?? this.droppedFolder),
       currentFolderRoot: currentFolderRoot ?? this.currentFolderRoot,
       activeWindow: activeWindow ?? this.activeWindow,
+      appMode: appMode ?? this.appMode,
     );
   }
 
@@ -116,5 +122,6 @@ class AppState extends Equatable {
         droppedFolder,
         currentFolderRoot,
         activeWindow,
+        appMode,
       ];
 }

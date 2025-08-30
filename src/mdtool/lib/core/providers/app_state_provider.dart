@@ -57,6 +57,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
           isDirty: false,
           isFolderSidebarVisible: true,  // Automatically show sidebar when file is opened
           isEditMode: defaultEditMode,  // Respect user's default edit mode preference
+          appMode: AppMode.project,  // Switch to project mode when file is opened
         ));
         break;
       case ActiveWindow.secondary:
@@ -76,6 +77,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
             isDirty: false,
             isFolderSidebarVisible: true,
             isEditMode: defaultEditMode,
+            appMode: AppMode.project,  // Switch to project mode when file is opened
           ));
         }
         break;
@@ -88,6 +90,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
           isDirty: false,
           isFolderSidebarVisible: true,
           isEditMode: defaultEditMode,
+          appMode: AppMode.project,  // Switch to project mode when file is opened
         ));
         break;
     }
@@ -300,6 +303,8 @@ class AppStateNotifier extends StateNotifier<AppState> {
     final newVisible = !state.isFolderSidebarVisible;
     _safeSetState(state.copyWith(
       isFolderSidebarVisible: newVisible,
+      // Switch to project mode when showing sidebar
+      appMode: newVisible ? AppMode.project : state.appMode,
     ));
     
     // Save as default preference
@@ -388,12 +393,26 @@ class AppStateNotifier extends StateNotifier<AppState> {
   void setCurrentFolderRoot(String folderRoot) {
     _safeSetState(state.copyWith(
       currentFolderRoot: folderRoot,
+      appMode: AppMode.project,  // Switch to project mode when folder is set
     ));
   }
 
   void setActiveWindow(ActiveWindow window) {
     _safeSetState(state.copyWith(
       activeWindow: window,
+    ));
+  }
+
+  void setAppMode(AppMode mode) {
+    _safeSetState(state.copyWith(
+      appMode: mode,
+    ));
+  }
+
+  void closeFolderAndReturnToOverview() {
+    _safeSetState(const AppState(
+      appMode: AppMode.overview,
+      isEditMode: true,
     ));
   }
 }

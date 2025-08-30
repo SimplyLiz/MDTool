@@ -143,8 +143,49 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
       case AppMode.overview:
         return _buildWelcomeView(ref);
       case AppMode.project:
-        return const WindowManager();
+        // In project mode, show WindowManager only if we have a file open or secondary file open
+        // or preview is visible, otherwise show empty workspace
+        if (appState.currentFile != null || 
+            appState.secondaryFile != null || 
+            appState.isPreviewVisible) {
+          return const WindowManager();
+        } else {
+          return _buildEmptyWorkspace(ref);
+        }
     }
+  }
+
+  Widget _buildEmptyWorkspace(WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.description_outlined,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No file open',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w300,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Select a file from the sidebar or create a new one',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildWelcomeView(WidgetRef ref) {

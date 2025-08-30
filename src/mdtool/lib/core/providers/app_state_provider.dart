@@ -127,7 +127,18 @@ class AppStateNotifier extends StateNotifier<AppState> {
   }
 
   void closeFile() {
-    _safeSetState(const AppState(isEditMode: true)); // Keep edit mode active when closing
+    _safeSetState(state.copyWith(
+      currentFile: null,
+      content: '',
+      originalContent: '',
+      isDirty: false,
+      // If we're in split screen but only have preview visible, turn off split screen
+      isSplitScreenMode: (state.isSplitScreenMode && state.isPreviewVisible && state.secondaryFile == null) ? false : state.isSplitScreenMode,
+      // Turn off preview if it was visible (since we're closing the file it was previewing)
+      isPreviewVisible: false,
+      // Keep the current app mode, folder sidebar state, and folder root
+      // This allows staying in project mode with an empty workspace
+    ));
   }
 
   /// Close file with save confirmation dialog if there are unsaved changes

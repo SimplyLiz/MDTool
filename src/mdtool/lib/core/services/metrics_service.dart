@@ -217,15 +217,15 @@ class MetricsService {
       0.0, (sum, usage) => sum + usage.cost
     );
 
-    // Check limits
-    final dailyTokenLimitExceeded = _limits.enableLimits && 
-        totalTokensToday >= _limits.dailyTokenLimit;
-    final dailyCostLimitExceeded = _limits.enableLimits && 
-        totalCostToday >= _limits.dailyCostLimit;
-    final monthlyTokenLimitExceeded = _limits.enableLimits && 
-        totalTokensThisMonth >= _limits.monthlyTokenLimit;
-    final monthlyCostLimitExceeded = _limits.enableLimits && 
-        totalCostThisMonth >= _limits.monthlyCostLimit;
+    // Check limits (use > not >= to allow using up to the limit)
+    final dailyTokenLimitExceeded = _limits.enableLimits &&
+        totalTokensToday > _limits.dailyTokenLimit;
+    final dailyCostLimitExceeded = _limits.enableLimits &&
+        totalCostToday > _limits.dailyCostLimit;
+    final monthlyTokenLimitExceeded = _limits.enableLimits &&
+        totalTokensThisMonth > _limits.monthlyTokenLimit;
+    final monthlyCostLimitExceeded = _limits.enableLimits &&
+        totalCostThisMonth > _limits.monthlyCostLimit;
 
     final dailyLimitExceeded = dailyTokenLimitExceeded || dailyCostLimitExceeded;
     final monthlyLimitExceeded = monthlyTokenLimitExceeded || monthlyCostLimitExceeded;
@@ -268,14 +268,29 @@ class MetricsService {
     if (provider == 'ollama') {
       return false;
     }
-    
+
+    final summary = getUsageSummary();
+
+    // Debug logging
+    print('DEBUG [MetricsService.isUsageBlocked]:');
+    print('  Provider: $provider');
+    print('  enableLimits: ${_limits.enableLimits}');
+    print('  disableWhenExceeded: ${_limits.disableWhenExceeded}');
+    print('  Daily token limit: ${_limits.dailyTokenLimit}');
+    print('  Daily cost limit: \$${_limits.dailyCostLimit}');
+    print('  Total tokens today: ${summary.totalTokensToday}');
+    print('  Total cost today: \$${summary.totalCostToday}');
+    print('  Daily limit exceeded: ${summary.dailyLimitExceeded}');
+    print('  Monthly limit exceeded: ${summary.monthlyLimitExceeded}');
+    print('  Is blocked: ${summary.isBlocked}');
+
     // Only apply limits to paid providers (OpenAI)
     if (provider == 'openai') {
-      return getUsageSummary().isBlocked;
+      return summary.isBlocked;
     }
-    
+
     // For general usage check, only block if using paid providers
-    return getUsageSummary().isBlocked;
+    return summary.isBlocked;
   }
 
   // Usage limits management

@@ -27,14 +27,32 @@ class GitGraphRenderer extends GraphRenderer {
     final gitData = _parseGitContent(content);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Container(
-      height: options?.height ?? 400,
-      width: options?.width ?? double.infinity,
-      padding: const EdgeInsets.all(16),
-      child: CustomPaint(
-        painter: GitGraphPainter(gitData, isDark),
-        child: Container(),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (gitData.title != null) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text(
+              gitData.title!,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+        Container(
+          height: options?.height ?? 400,
+          width: options?.width ?? double.infinity,
+          padding: const EdgeInsets.all(16),
+          child: CustomPaint(
+            painter: GitGraphPainter(gitData, isDark),
+            child: Container(),
+          ),
+        ),
+      ],
     );
   }
   
@@ -115,7 +133,15 @@ class GitGraphRenderer extends GraphRenderer {
       // Parse checkout
       if (trimmed.startsWith('checkout ')) {
         currentBranch = trimmed.substring(9).trim();
-        activeBranch = branches.firstWhere((b) => b.name == currentBranch);
+        activeBranch = branches.firstWhere((b) => b.name == currentBranch, orElse: () {
+          // If branch doesn't exist, create it
+          final newBranch = GitBranch(
+            name: currentBranch,
+            color: _getBranchColor(branches.length),
+          );
+          branches.add(newBranch);
+          return newBranch;
+        });
         continue;
       }
       
@@ -138,19 +164,25 @@ class GitGraphRenderer extends GraphRenderer {
         final targetBranchIndex = branches.indexWhere((b) => b.name == currentBranch);
         final sourceBranchIndex = branches.indexWhere((b) => b.name == sourceBranch);
         
-        commits.add(GitCommit(
-          id: 'm${commits.length + 1}',
-          message: 'Merge $sourceBranch into $currentBranch',
-          branch: currentBranch,
-          x: commits.length.toDouble(),
-          y: targetBranchIndex.toDouble(),
-          mergeFrom: sourceBranchIndex.toDouble(),
-        ));
+        if (sourceBranchIndex >= 0) {
+          commits.add(GitCommit(
+            id: 'm${commits.length + 1}',
+            message: 'Merge $sourceBranch',
+            branch: currentBranch,
+            x: commits.length.toDouble(),
+            y: targetBranchIndex.toDouble(),
+            mergeFrom: sourceBranchIndex.toDouble(),
+          ));
+        }
         continue;
       }
       
       // Parse simple commit syntax (just message)
-      if (trimmed.isNotEmpty && !trimmed.contains(':')) {
+      if (trimmed.isNotEmpty && 
+          !trimmed.contains(':') && 
+          !trimmed.startsWith('branch') && 
+          !trimmed.startsWith('checkout') &&
+          !trimmed.startsWith('merge')) {
         commits.add(GitCommit(
           id: 'c${commits.length + 1}',
           message: trimmed,

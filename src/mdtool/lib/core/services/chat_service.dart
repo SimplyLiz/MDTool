@@ -254,15 +254,24 @@ class ChatService {
       // Check if usage is blocked for the selected provider
       if (_metricsService.isUsageBlocked(provider: finalProvider.name)) {
         final summary = _metricsService.getUsageSummary();
-        String limitMessage = 'OpenAI usage limit exceeded. ';
+        final limits = _metricsService.limits;
+
+        String limitMessage = 'Local usage limit exceeded (this is not an OpenAI API error).\n\n';
+
         if (summary.dailyLimitExceeded) {
-          limitMessage += 'Daily limit reached. ';
+          limitMessage += 'Daily limits: ${summary.totalTokensToday} / ${limits.dailyTokenLimit} tokens, ';
+          limitMessage += '\$${summary.totalCostToday.toStringAsFixed(3)} / \$${limits.dailyCostLimit.toStringAsFixed(2)}\n';
         }
         if (summary.monthlyLimitExceeded) {
-          limitMessage += 'Monthly limit reached. ';
+          limitMessage += 'Monthly limits: ${summary.totalTokensThisMonth} / ${limits.monthlyTokenLimit} tokens, ';
+          limitMessage += '\$${summary.totalCostThisMonth.toStringAsFixed(3)} / \$${limits.monthlyCostLimit.toStringAsFixed(2)}\n';
         }
-        limitMessage += 'Please adjust limits in preferences to continue, or use Ollama instead.';
-        
+
+        limitMessage += '\nTo continue:\n';
+        limitMessage += '• Adjust limits in Preferences → Usage Limits\n';
+        limitMessage += '• Or disable limits entirely\n';
+        limitMessage += '• Or use Ollama (always unlimited)';
+
         final errorMsg = ChatMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           content: limitMessage,

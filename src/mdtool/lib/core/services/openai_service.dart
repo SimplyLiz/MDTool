@@ -62,7 +62,21 @@ class OpenAIService {
       } else if (response.statusCode == 401) {
         throw Exception('Invalid API key. Please check your OpenAI API key in preferences.');
       } else if (response.statusCode == 429) {
-        throw Exception('Rate limit exceeded. Please try again later.');
+        final data = jsonDecode(response.body);
+        final error = data['error'] as Map<String, dynamic>? ?? {};
+        final errorType = error['type'] as String? ?? '';
+        final message = error['message'] as String? ?? 'Rate limit exceeded';
+
+        // Distinguish between rate limits and quota issues
+        if (errorType == 'insufficient_quota') {
+          throw Exception(
+            'OpenAI account has insufficient quota. Please check your billing and add credits at:\n'
+            'https://platform.openai.com/account/billing\n\n'
+            'Details: $message'
+          );
+        } else {
+          throw Exception('OpenAI rate limit exceeded: $message');
+        }
       } else if (response.statusCode == 400) {
         final data = jsonDecode(response.body);
         final error = data['error'] as Map<String, dynamic>? ?? {};
@@ -181,6 +195,10 @@ class OpenAIService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/chat/completions');
+      print('DEBUG [OpenAIService]: Making request to: $uri');
+      print('DEBUG [OpenAIService]: Model: $model');
+      print('DEBUG [OpenAIService]: Messages count: ${messages.length}');
+
       final response = await http.post(
         uri,
         headers: {
@@ -195,15 +213,17 @@ class OpenAIService {
         }),
       ).timeout(const Duration(seconds: 30));
 
+      print('DEBUG [OpenAIService]: Response status code: ${response.statusCode}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final choices = data['choices'] as List<dynamic>? ?? [];
         final usage = data['usage'] as Map<String, dynamic>? ?? {};
-        
+
         if (choices.isNotEmpty) {
           final message = choices[0]['message'] as Map<String, dynamic>? ?? {};
           final content = message['content'] as String? ?? '';
-          
+
           return OpenAIResponse(
             content: content,
             inputTokens: usage['prompt_tokens'] ?? 0,
@@ -213,15 +233,36 @@ class OpenAIService {
         }
         throw Exception('No response content from OpenAI API');
       } else if (response.statusCode == 401) {
+        print('DEBUG [OpenAIService]: 401 Unauthorized - Invalid API key');
         throw Exception('Invalid API key. Please check your OpenAI API key in preferences.');
       } else if (response.statusCode == 429) {
-        throw Exception('Rate limit exceeded. Please try again later.');
+        print('DEBUG [OpenAIService]: 429 response from OpenAI API');
+        print('DEBUG [OpenAIService]: Response body: ${response.body}');
+        final data = jsonDecode(response.body);
+        final error = data['error'] as Map<String, dynamic>? ?? {};
+        final errorType = error['type'] as String? ?? '';
+        final message = error['message'] as String? ?? 'Rate limit exceeded';
+
+        // Distinguish between rate limits and quota issues
+        if (errorType == 'insufficient_quota') {
+          throw Exception(
+            'OpenAI account has insufficient quota. Please check your billing and add credits at:\n'
+            'https://platform.openai.com/account/billing\n\n'
+            'Details: $message'
+          );
+        } else {
+          throw Exception('OpenAI rate limit exceeded: $message');
+        }
       } else if (response.statusCode == 400) {
+        print('DEBUG [OpenAIService]: 400 Bad request');
+        print('DEBUG [OpenAIService]: Response body: ${response.body}');
         final data = jsonDecode(response.body);
         final error = data['error'] as Map<String, dynamic>? ?? {};
         final message = error['message'] as String? ?? 'Bad request';
         throw Exception('OpenAI API error: $message');
       } else {
+        print('DEBUG [OpenAIService]: Unexpected status ${response.statusCode}');
+        print('DEBUG [OpenAIService]: Response body: ${response.body}');
         throw Exception('OpenAI API error: ${response.statusCode} - ${response.body}');
       }
     } on SocketException {

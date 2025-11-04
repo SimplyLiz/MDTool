@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
-import 'package:flutter_highlight/themes/github.dart';
-import 'package:flutter_highlight/themes/vs2015.dart';
 import 'package:markdown/markdown.dart' as md;
 import '../../core/services/graph_renderer.dart';
 import '../../core/services/renderers/mermaid_renderer.dart';
 import '../../core/services/renderers/chart_renderer.dart';
-import '../../core/services/renderers/simple_chart_renderer.dart';
-import '../themes/app_theme.dart';
+import '../../core/services/renderers/flowchart_renderer.dart';
+import '../../core/services/renderers/gitgraph_renderer.dart';
+import '../../core/services/renderers/plantuml_renderer.dart';
 
 /// Enhanced code element builder that handles both syntax highlighting and graph rendering
 class GraphElementBuilder extends MarkdownElementBuilder {
@@ -72,7 +71,6 @@ class GraphElementBuilder extends MarkdownElementBuilder {
     }
     
     // Try to render as graph first
-    
     final renderer = registry.findRenderer(language);
     if (renderer != null) {
       final widget = _buildGraphWidget(renderer, code, language);
@@ -93,7 +91,6 @@ class GraphElementBuilder extends MarkdownElementBuilder {
     }
     
     // Try to render as graph first
-    
     final renderer = registry.findRenderer(language);
     if (renderer != null) {
       final widget = _buildGraphWidget(renderer, code, language);
@@ -446,22 +443,15 @@ class _GraphCopyButtonState extends State<_GraphCopyButton> {
 /// Service for initializing graph renderers in the element builder
 class GraphElementService {
   static void ensureRenderersRegistered(GraphRendererRegistry registry) {
-    
-    // Check if renderers are already registered
-    if (registry.renderers.isNotEmpty) {
-      return;
-    }
-    
-    
-    // Register all available renderers
+    // Always register renderers - the registry handles duplicates
     try {
       registry.register(MermaidRenderer());
-      
       registry.register(ChartRenderer());
-      
-      registry.register(SimpleChartRenderer());
-      
+      registry.register(FlowchartRenderer());
+      registry.register(GitGraphRenderer());
+      registry.register(PlantUMLRenderer());
     } catch (e) {
+      // Silently handle registration errors
     }
   }
 }

@@ -12,9 +12,10 @@ import '../../core/providers/preferences_provider.dart';
 import '../../core/services/scroll_sync_service.dart';
 import '../../core/services/file_service.dart';
 import '../../core/services/block_index.dart';
-import 'fenced_code_block_builder.dart';
-import 'simple_chart_renderer.dart';
+import 'graph_element_builder.dart';
 import '../../core/services/graph_renderer.dart';
+import 'package:flutter_highlight/themes/github.dart' as gh_theme;
+import 'package:flutter_highlight/themes/vs2015.dart' as vs_dark_theme;
 
 class MarkdownPreview extends ConsumerStatefulWidget {
   const MarkdownPreview({super.key});
@@ -584,24 +585,18 @@ $html
       return const SizedBox(height: 8); // Empty line spacing
     }
 
-    // Check if this block contains charts and render accordingly
-    if (text.contains('```mermaid') || text.contains('```chart')) {
-      // Use simple chart renderer for blocks with charts
-      final widgets = SimpleChartRenderer.processMarkdown(text, context);
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: widgets,
-      );
-    }
-    
-    // Use flutter_markdown for regular content
+    // Use flutter_markdown with GraphElementBuilder for all content
     return MarkdownBody(
       data: text,
       selectable: false,
       styleSheet: _buildStyleSheet(context, preferences),
       extensionSet: md.ExtensionSet([...md.ExtensionSet.gitHubFlavored.blockSyntaxes, md.TableSyntax()], [md.EmojiSyntax(), ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes]),
       builders: {
-        'code': FencedCodeBlockBuilder(context: context),
+        'code': GraphElementBuilder(
+          codeTheme: Theme.of(context).brightness == Brightness.dark 
+            ? vs_dark_theme.vs2015Theme 
+            : gh_theme.githubTheme,
+        ),
         'img': ImageElementBuilder(),
       },
       onTapLink: (text, href, title) {

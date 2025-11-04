@@ -12,7 +12,7 @@ This document demonstrates all supported graph types in MDTool using native rend
 
 ### Bar Chart Example
 
-```chart
+```chartfdf 
 type: bar
 title: Monthly Sales Report
 description: Sales data for Q1 2024

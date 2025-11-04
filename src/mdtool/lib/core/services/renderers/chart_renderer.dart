@@ -132,20 +132,12 @@ class ChartRenderer extends GraphRenderer {
       }
       
       // Parse data points
-      if (inDataSection) {
-        if (trimmed.startsWith('-') || trimmed.contains(':') || trimmed.contains(',')) {
-          final point = _parseDataPoint(trimmed, labels);
+      if (inDataSection || !trimmed.contains(':') || !trimmed.contains('title:') && !trimmed.contains('description:') && !trimmed.contains('type:')) {
+        if (trimmed.contains(':') || trimmed.contains(',')) {
+          final point = _parseDataPoint(trimmed, labels, data.length);
           if (point != null) {
             data.add(point);
           }
-        }
-      }
-      
-      // Try to parse simple format: x,y or label:value
-      if (!inDataSection && (trimmed.contains(',') || trimmed.contains(':'))) {
-        final point = _parseDataPoint(trimmed, labels);
-        if (point != null) {
-          data.add(point);
         }
       }
     }
@@ -181,33 +173,40 @@ class ChartRenderer extends GraphRenderer {
     }
   }
   
-  ChartDataPoint? _parseDataPoint(String line, List<String>? labels) {
+  ChartDataPoint? _parseDataPoint(String line, List<String>? labels, int index) {
     try {
       final trimmed = line.trim();
+      
+      // Skip metadata lines
+      if (trimmed.startsWith('title:') || 
+          trimmed.startsWith('description:') || 
+          trimmed.startsWith('type:') ||
+          trimmed.startsWith('labels:') ||
+          trimmed == 'data:') {
+        return null;
+      }
       
       // Remove YAML list marker
       String cleanLine = trimmed.startsWith('-') ? trimmed.substring(1).trim() : trimmed;
       
-      // Parse key:value format
-      if (cleanLine.contains(':')) {
-        final parts = cleanLine.split(':');
-        if (parts.length >= 2) {
-          final label = parts[0].trim();
-          final valueStr = parts[1].trim();
-          final value = double.tryParse(valueStr);
-          if (value != null) {
-            return ChartDataPoint(x: 0, y: value, label: label);
-          }
+      // Parse key:value format (like "January: 15000")
+      if (cleanLine.contains(':') && !cleanLine.contains(',')) {
+        final colonIndex = cleanLine.indexOf(':');
+        final label = cleanLine.substring(0, colonIndex).trim();
+        final valueStr = cleanLine.substring(colonIndex + 1).trim();
+        final value = double.tryParse(valueStr);
+        if (value != null) {
+          return ChartDataPoint(x: index.toDouble(), y: value, label: label);
         }
       }
       
-      // Parse x,y format
+      // Parse x,y format (like "0,120" or "1,65,Junior")
       if (cleanLine.contains(',')) {
         final parts = cleanLine.split(',');
         if (parts.length >= 2) {
           final xStr = parts[0].trim();
           final yStr = parts[1].trim();
-          final x = double.tryParse(xStr) ?? 0;
+          final x = double.tryParse(xStr) ?? index.toDouble();
           final y = double.tryParse(yStr);
           if (y != null) {
             String? label;
@@ -241,7 +240,7 @@ class ChartRenderer extends GraphRenderer {
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 final point = chartData.data[group.x.toInt()];
                 return BarTooltipItem(
-                  '${point.label ?? 'Data'}\n${point.y}',
+                  '${point.label ?? 'Data'}\n${_formatValue(point.y)}',
                   TextStyle(color: isDark ? Colors.white : Colors.black),
                 );
               },
@@ -273,7 +272,7 @@ class ChartRenderer extends GraphRenderer {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   return Text(
-                    value.toStringAsFixed(0),
+                    _formatValue(value),
                     style: TextStyle(
                       color: isDark ? Colors.white70 : Colors.black87,
                       fontSize: 12,
@@ -589,6 +588,13 @@ class ChartRenderer extends GraphRenderer {
   
   double _getMaxValue(List<ChartDataPoint> data) {
     return data.map((point) => point.y).reduce(math.max);
+  }
+  
+  String _formatValue(double value) {
+    if (value == value.toInt()) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(1);
   }
 }
 

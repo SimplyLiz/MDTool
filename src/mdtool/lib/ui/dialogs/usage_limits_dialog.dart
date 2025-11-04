@@ -191,6 +191,14 @@ class _UsageLimitsDialogState extends ConsumerState<UsageLimitsDialog> {
       ),
       actions: [
         TextButton(
+          onPressed: _clearUsageData,
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+          child: const Text('Clear Usage Data'),
+        ),
+        const Spacer(),
+        TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
@@ -292,20 +300,82 @@ class _UsageLimitsDialogState extends ConsumerState<UsageLimitsDialog> {
     );
   }
 
+  void _clearUsageData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Usage Data?'),
+        content: const Text(
+          'This will reset all token usage counters to zero. Your usage limits will remain unchanged.\n\n'
+          'This is useful if you have stale data blocking your requests.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Clear Data'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(metricsServiceProvider).clearAllData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Usage data cleared successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error clearing data: $e')),
+          );
+        }
+      }
+    }
+  }
+
   void _saveLimits() {
     try {
+      final dailyTokenLimit = int.parse(_dailyTokenController.text);
+      final dailyCostLimit = double.parse(_dailyCostController.text);
+      final monthlyTokenLimit = int.parse(_monthlyTokenController.text);
+      final monthlyCostLimit = double.parse(_monthlyCostController.text);
+
+      // Validate that limits are positive
+      if (_enableLimits) {
+        if (dailyTokenLimit <= 0 || dailyCostLimit <= 0 ||
+            monthlyTokenLimit <= 0 || monthlyCostLimit <= 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Limits must be greater than 0. Use the toggle to disable limits instead.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
       final newLimits = UsageLimits(
-        dailyTokenLimit: int.parse(_dailyTokenController.text),
-        dailyCostLimit: double.parse(_dailyCostController.text),
-        monthlyTokenLimit: int.parse(_monthlyTokenController.text),
-        monthlyCostLimit: double.parse(_monthlyCostController.text),
+        dailyTokenLimit: dailyTokenLimit,
+        dailyCostLimit: dailyCostLimit,
+        monthlyTokenLimit: monthlyTokenLimit,
+        monthlyCostLimit: monthlyCostLimit,
         enableLimits: _enableLimits,
         disableWhenExceeded: _disableWhenExceeded,
       );
 
       ref.read(usageLimitsProvider.notifier).updateLimits(newLimits);
       Navigator.of(context).pop();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Usage limits updated successfully')),
       );

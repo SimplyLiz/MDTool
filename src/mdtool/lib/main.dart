@@ -13,33 +13,55 @@ import 'core/providers/app_state_provider.dart';
 import 'core/services/file_service.dart';
 import 'core/models/app_state.dart';
 
+// Global container reference for accessing providers from method channel
+ProviderContainer? _globalContainer;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize sqflite for desktop platforms
   if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
-  
+
   // Initialize preferences service
   final preferencesService = await PreferencesService.getInstance();
-  
+
   // Set up method channel for file opening
   const platform = MethodChannel('open_file_channel');
   platform.setMethodCallHandler((call) async {
     if (call.method == "openFile") {
       final filePath = call.arguments as String;
-      // TODO: Implement file opening logic
-      print("Received file to open: $filePath");
+      print("DEBUG: Received file to open from Finder: $filePath");
+
+      // Open the file using the app state provider
+      if (_globalContainer != null) {
+        try {
+          final fileService = FileService();
+          final content = await fileService.readFile(filePath);
+          _globalContainer!.read(appStateProvider.notifier).openFile(filePath, content);
+          print("DEBUG: Successfully opened file: $filePath");
+        } catch (e) {
+          print("ERROR: Failed to open file from Finder: $e");
+        }
+      } else {
+        print("ERROR: Global container not initialized");
+      }
     }
   });
-  
+
+  // Create provider container with global reference
+  final container = ProviderContainer(
+    overrides: [
+      preferencesServiceProvider.overrideWithValue(preferencesService),
+    ],
+  );
+  _globalContainer = container;
+
   runApp(
-    ProviderScope(
-      overrides: [
-        preferencesServiceProvider.overrideWithValue(preferencesService),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const MDToolApp(),
     ),
   );

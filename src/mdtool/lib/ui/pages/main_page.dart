@@ -124,14 +124,6 @@ class _MainPageState extends ConsumerState<MainPage> with SingleTickerProviderSt
               ),
             ),
             const StatusBar(),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-              child: Text(
-                '© 2025 Tastehub GmbH',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
-            ),
           ],
         ),
       ),

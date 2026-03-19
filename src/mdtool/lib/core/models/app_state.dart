@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'tab_item.dart';
 
 enum ActiveWindow { primary, preview, secondary }
 
@@ -26,6 +27,11 @@ class AppState extends Equatable {
   final String? currentFolderRoot;
   final ActiveWindow activeWindow;
   final AppMode appMode;
+  final bool isSingleFileMode; // True when file opened from Finder, folder tree not auto-expanded
+
+  // Tab management
+  final List<TabItem> openTabs;
+  final String? activeTabId;
 
   const AppState({
     this.currentFile,
@@ -49,6 +55,9 @@ class AppState extends Equatable {
     this.currentFolderRoot,
     this.activeWindow = ActiveWindow.primary,
     this.appMode = AppMode.overview,
+    this.isSingleFileMode = false,
+    this.openTabs = const [],
+    this.activeTabId,
   });
 
   AppState copyWith({
@@ -73,7 +82,10 @@ class AppState extends Equatable {
     String? currentFolderRoot,
     ActiveWindow? activeWindow,
     AppMode? appMode,
+    bool? isSingleFileMode,
     bool clearDroppedFolder = false,
+    List<TabItem>? openTabs,
+    String? activeTabId,
   }) {
     return AppState(
       currentFile: currentFile ?? this.currentFile,
@@ -97,7 +109,20 @@ class AppState extends Equatable {
       currentFolderRoot: currentFolderRoot ?? this.currentFolderRoot,
       activeWindow: activeWindow ?? this.activeWindow,
       appMode: appMode ?? this.appMode,
+      isSingleFileMode: isSingleFileMode ?? this.isSingleFileMode,
+      openTabs: openTabs ?? this.openTabs,
+      activeTabId: activeTabId ?? this.activeTabId,
     );
+  }
+
+  /// Get the currently active tab, or null if none
+  TabItem? get activeTab {
+    if (activeTabId == null) return null;
+    try {
+      return openTabs.firstWhere((t) => t.id == activeTabId);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
@@ -123,5 +148,8 @@ class AppState extends Equatable {
         currentFolderRoot,
         activeWindow,
         appMode,
+        isSingleFileMode,
+        openTabs,
+        activeTabId,
       ];
 }

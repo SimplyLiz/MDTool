@@ -32,9 +32,10 @@ class WebViewPool {
   void returnController(WebViewController controller) {
     if (_usedControllers.remove(controller)) {
       if (_availableControllers.length < _maxPoolSize) {
-        // Reset the controller and add it back to the pool
-        _resetController(controller);
-        _availableControllers.add(controller);
+        // Reset the controller and add it back to the pool once reset completes
+        _resetController(controller).then((_) {
+          _availableControllers.add(controller);
+        });
       }
       // If pool is full, let the controller be garbage collected
     }
@@ -67,21 +68,21 @@ class WebViewPool {
   }
 
   /// Reset a controller for reuse
-  void _resetController(WebViewController controller) {
+  Future<void> _resetController(WebViewController controller) async {
     // Best-effort reset to static mode before loading new content (ignore errors)
-    controller.runJavaScript(
+    await controller.runJavaScript(
       'try{window.setInteractiveMode && window.setInteractiveMode(false);}catch(e){}'
     );
-    
+
     // Clear any previous content but keep it simple to avoid conflicts
-    controller.loadHtmlString('''
+    await controller.loadHtmlString('''
       <!DOCTYPE html>
       <html>
         <head><title>Ready</title></head>
         <body><div style="padding:20px;">Ready for next chart...</div></body>
       </html>
     ''');
-    
+
     // Don't remove the channel; just unbind any old sink
     _heightSinks.remove(controller);
   }
@@ -336,7 +337,11 @@ class WebViewPool {
         
         function showError(message) {
             const container = document.getElementById('mermaid-graph');
-            container.innerHTML = '<div class="error-message">' + message + '</div>';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(errorDiv);
         }
         
         // Make renderMermaid available globally for WebView

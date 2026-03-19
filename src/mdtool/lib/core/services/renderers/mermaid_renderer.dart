@@ -45,37 +45,50 @@ class MermaidRenderer extends GraphRenderer {
     );
   }
   
+  /// Mermaid diagram type keywords that mark the end of any frontmatter
+  static final _diagramTypes = RegExp(
+    r'^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|gitgraph|journey|requirementDiagram|mindmap|quadrantChart|xychart|timeline)\b',
+  );
+
   @override
   GraphMetadata extractMetadata(String content) {
     final lines = content.trim().split('\n');
     String? title;
     String? description;
     final attributes = <String, String>{};
-    
-    // Look for title in various formats
+    bool inFrontmatter = false;
+
     for (final line in lines) {
       final trimmed = line.trim();
-      
-      // Title directive
+      if (trimmed.isEmpty) continue;
+
+      // Detect YAML frontmatter block delimited by ---
+      if (trimmed == '---') {
+        inFrontmatter = !inFrontmatter;
+        continue;
+      }
+
+      // Stop parsing metadata once we hit actual diagram content
+      if (_diagramTypes.hasMatch(trimmed)) break;
+
+      // Only parse key:value pairs inside frontmatter or as a title directive
       if (trimmed.startsWith('title:')) {
         title = trimmed.substring(6).trim();
         continue;
       }
-      
-      // YAML-style metadata
-      if (trimmed.startsWith('---')) continue;
-      if (trimmed.contains(':') && !trimmed.contains('-->')) {
-        final parts = trimmed.split(':');
-        if (parts.length == 2) {
-          final key = parts[0].trim();
-          final value = parts[1].trim();
+
+      if (inFrontmatter) {
+        final colonIndex = trimmed.indexOf(':');
+        if (colonIndex > 0) {
+          final key = trimmed.substring(0, colonIndex).trim();
+          final value = trimmed.substring(colonIndex + 1).trim();
           if (key == 'title') title = value;
           if (key == 'description') description = value;
           attributes[key] = value;
         }
       }
     }
-    
+
     return GraphMetadata(
       title: title,
       description: description,
@@ -147,12 +160,30 @@ class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
   }
 
   @override
+  void didUpdateWidget(covariant _PooledMermaidWebView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.content != widget.content || oldWidget.theme != widget.theme) {
+      _rerenderContent();
+    }
+  }
+
+  void _rerenderContent() {
+    if (controller == null) return;
+    final escapedContent = _escapeContent(widget.content);
+    controller!.runJavaScript('''
+      if (window.renderMermaid) {
+        window.renderMermaid(`$escapedContent`);
+      }
+    ''');
+  }
+
+  @override
   void dispose() {
     // Best-effort reset to static mode before returning to pool (ignore errors if page changed)
     controller?.runJavaScript(
       'try{window.setInteractiveMode && window.setInteractiveMode(false);}catch(e){}'
     );
-    
+
     // Unbind height sink and return controller to pool for reuse
     if (controller != null) {
       _pool.unbindHeightSink(controller!);
@@ -214,9 +245,9 @@ class _PooledMermaidWebViewState extends State<_PooledMermaidWebView> {
 
   String _escapeContent(String content) {
     return content
+        .replaceAll('\\', '\\\\')
         .replaceAll('`', '\\`')
-        .replaceAll('\$', '\\\$')
-        .replaceAll('\\', '\\\\');
+        .replaceAll('\$', '\\\$');
   }
 
   @override

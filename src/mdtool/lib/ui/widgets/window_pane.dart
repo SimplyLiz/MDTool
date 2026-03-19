@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/app_state.dart';
+import '../../core/providers/app_state_provider.dart';
 import 'window_header.dart';
+import 'editor_tab_bar.dart';
 
 enum WindowPaneType {
   editor,
@@ -53,6 +55,11 @@ class WindowPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final appState = ref.watch(appStateProvider);
+    final showTabBar = config.type == WindowPaneType.editor &&
+        config.activeWindow == ActiveWindow.primary &&
+        appState.openTabs.isNotEmpty;
+
     return Container(
       padding: padding,
       decoration: BoxDecoration(
@@ -66,6 +73,9 @@ class WindowPane extends ConsumerWidget {
         borderRadius: BorderRadius.circular(7),
         child: Column(
           children: [
+            // Tab bar (only for primary editor pane when tabs are open)
+            if (showTabBar) const EditorTabBar(),
+            // Window header
             WindowHeader(
               windowType: _getWindowType(),
               activeWindowType: config.activeWindow,

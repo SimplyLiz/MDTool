@@ -97,15 +97,31 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
   @override
   Widget build(BuildContext context) {
     ref.listen(appStateProvider, (previous, current) {
+      // Skip auto-navigation when in single file mode
+      if (current.isSingleFileMode) {
+        // Clear cached directory so expandToFolder triggers a fresh scan
+        _currentDirectory = null;
+        // Only handle folder picker requests and dropped folders in single file mode
+        if (previous?.folderPickerRequestId != current.folderPickerRequestId) {
+          _handleFolderPickerRequest(current.folderPickerRequestId);
+        }
+        if (previous?.droppedFolder != current.droppedFolder &&
+            current.droppedFolder != null &&
+            current.droppedFolder!.isNotEmpty) {
+          _handleDroppedFolder(current.droppedFolder!);
+        }
+        return;
+      }
+
       if (previous?.currentFile != current.currentFile) {
         final currentFile = current.currentFile;
         if (currentFile != null) {
           final fileDirectory = currentFile.substring(0, currentFile.lastIndexOf('/'));
-          
+
           // Check if auto-navigation is enabled
           final preferences = ref.read(preferencesProvider).valueOrNull;
           final autoNavigate = preferences?.autoNavigateToFileFolder ?? false;
-          
+
           // Auto-navigate to file's directory if enabled, different from current, and no explicit folder root
           if (autoNavigate && _currentDirectory != fileDirectory && current.currentFolderRoot == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -114,15 +130,24 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           }
         }
       }
-      
+
+      // Handle currentFolderRoot changes (e.g., when expanding from single file mode)
+      if (previous?.currentFolderRoot != current.currentFolderRoot &&
+          current.currentFolderRoot != null &&
+          _currentDirectory != current.currentFolderRoot) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scanForMarkdownFiles(directoryPath: current.currentFolderRoot);
+        });
+      }
+
       // Handle folder picker requests from toolbar
       if (previous?.folderPickerRequestId != current.folderPickerRequestId) {
         _handleFolderPickerRequest(current.folderPickerRequestId);
       }
-      
+
       // Handle dropped folders
-      if (previous?.droppedFolder != current.droppedFolder && 
-          current.droppedFolder != null && 
+      if (previous?.droppedFolder != current.droppedFolder &&
+          current.droppedFolder != null &&
           current.droppedFolder!.isNotEmpty) {
         _handleDroppedFolder(current.droppedFolder!);
       }
@@ -184,12 +209,19 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
   
   /// Build virtualized tree using ListView.builder for optimal performance
   Widget _buildVirtualizedTree() {
+    final appState = ref.watch(appStateProvider);
+
+    // In single file mode, show the current file with option to expand folder
+    if (appState.isSingleFileMode && appState.currentFile != null) {
+      return _buildSingleFileView(appState.currentFile!);
+    }
+
     final flattenedItems = _treeController.getFlattenedVisibleItems();
-    
+
     if (flattenedItems.isEmpty) {
       return _buildEmptyState();
     }
-    
+
     return ListView.builder(
       key: _listKey,
       controller: _scrollController,
@@ -200,6 +232,90 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
         final item = flattenedItems[index];
         return _buildTreeItem(item, index);
       },
+    );
+  }
+
+  /// Build single file view when opened from Finder
+  Widget _buildSingleFileView(String filePath) {
+    final fileName = filePath.split('/').last;
+    final parentFolder = filePath.substring(0, filePath.lastIndexOf('/'));
+    final parentFolderName = parentFolder.split('/').last;
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Current file indicator
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.description,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fileName,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'in $parentFolderName',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Show folder button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                ref.read(appStateProvider.notifier).expandToFolder();
+              },
+              icon: const Icon(Icons.folder_open, size: 18),
+              label: const Text('Show Folder Contents'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Info text
+          Text(
+            'Click to browse other files in the same folder',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
   

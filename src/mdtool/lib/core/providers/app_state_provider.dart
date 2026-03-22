@@ -56,7 +56,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
       isFolderSidebarVisible: true, // Show sidebar
       isSingleFileMode: true, // Don't auto-expand folder tree
       appMode: AppMode.project, // Switch to project mode
-      // Don't set currentFolderRoot - user will opt-in to see folder
+      clearCurrentFolderRoot: true, // Clear stale folder root so expandToFolder triggers a fresh scan
     ));
 
     // Save last opened file to preferences and add to recent files

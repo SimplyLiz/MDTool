@@ -84,6 +84,7 @@ class AppState extends Equatable {
     AppMode? appMode,
     bool? isSingleFileMode,
     bool clearDroppedFolder = false,
+    bool clearCurrentFolderRoot = false,
     List<TabItem>? openTabs,
     String? activeTabId,
   }) {
@@ -106,7 +107,7 @@ class AppState extends Equatable {
       scrollRequestId: scrollRequestId ?? this.scrollRequestId,
       folderPickerRequestId: folderPickerRequestId ?? this.folderPickerRequestId,
       droppedFolder: clearDroppedFolder ? null : (droppedFolder ?? this.droppedFolder),
-      currentFolderRoot: currentFolderRoot ?? this.currentFolderRoot,
+      currentFolderRoot: clearCurrentFolderRoot ? null : (currentFolderRoot ?? this.currentFolderRoot),
       activeWindow: activeWindow ?? this.activeWindow,
       appMode: appMode ?? this.appMode,
       isSingleFileMode: isSingleFileMode ?? this.isSingleFileMode,

@@ -75,6 +75,7 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
   @override
   void dispose() {
     _scrollController.dispose();
+    // _graphService has no resources that need explicit disposal
     super.dispose();
   }
 
@@ -84,7 +85,6 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
     }
 
     _lastScrollRequestId = requestId;
-    print('Handling scroll request for heading: $heading');
 
     // Clear the scroll request after handling
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -242,129 +242,57 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
         try {
           Actions.invoke(context, SelectAllTextIntent(SelectionChangedCause.keyboard));
         } catch (e2) {
-          print('Select all failed: $e2');
+          debugPrint('Select all failed: $e2');
         }
       }
     }
   }
 
-  void _copyMarkdownAsFormatted() async {
+  void _copyMarkdownAsFormatted() => _copyAsRtf('Rich text copied to clipboard');
+
+  void _copyAsRichText() => _copyAsRtf('Rich text copied to clipboard (paste into Word)');
+
+  void _copyAsRtf(String successMessage) async {
     final appState = ref.read(appStateProvider);
     final content = appState.content;
-
-    // Convert markdown to HTML
     final html = md.markdownToHtml(content, extensionSet: md.ExtensionSet.gitHubFlavored);
 
     try {
-      // Create a temporary HTML file
       final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/temp_markdown.html');
+      final tempFile = File('${tempDir.path}/mdtool_copy_${DateTime.now().millisecondsSinceEpoch}.html');
 
-      // Write HTML with basic styling
-      final styledHtml =
-          '''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; }
-        h1, h2, h3, h4, h5, h6 { font-weight: bold; margin: 1em 0 0.5em 0; }
-        p { margin: 0.5em 0; }
-        code { font-family: Monaco, Courier, monospace; background-color: #f5f5f5; padding: 2px 4px; }
-        pre { background-color: #f5f5f5; padding: 10px; border-radius: 4px; }
-        blockquote { margin-left: 20px; padding-left: 10px; border-left: 4px solid #ccc; color: #666; }
-        ul, ol { margin: 0.5em 0; padding-left: 2em; }
-    </style>
-</head>
-<body>
-$html
-</body>
-</html>
-''';
+      final styledHtml = '''<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.6;}
+h1,h2,h3,h4,h5,h6{font-weight:bold;margin:1em 0 .5em 0;}
+p{margin:.5em 0;}code{font-family:Monaco,Courier,monospace;background-color:#f5f5f5;padding:2px 4px;}
+pre{background-color:#f5f5f5;padding:10px;border-radius:4px;}
+blockquote{margin-left:20px;padding-left:10px;border-left:4px solid #ccc;color:#666;}
+ul,ol{margin:.5em 0;padding-left:2em;}
+</style></head><body>$html</body></html>''';
 
       await tempFile.writeAsString(styledHtml);
 
-      // Use textutil to convert HTML to RTF and copy to clipboard
-      final result = await Process.run('sh', ['-c', 'textutil -convert rtf -stdout "${tempFile.path}" | pbcopy']);
+      try {
+        final result = await Process.run('sh', ['-c', 'textutil -convert rtf -stdout "${tempFile.path}" | pbcopy']);
 
-      // Clean up temp file
-      if (await tempFile.exists()) {
-        await tempFile.delete();
-      }
-
-      if (result.exitCode == 0) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rich text copied to clipboard'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 2)));
-      } else {
-        throw Exception('textutil failed: ${result.stderr}');
-      }
-    } catch (e) {
-      // Fallback to plain text if RTF conversion fails
-      Clipboard.setData(ClipboardData(text: content));
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied as plain text (RTF conversion failed)'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 2)));
-    }
-  }
-
-  void _copyAsRichText() async {
-    final appState = ref.read(appStateProvider);
-    final content = appState.content;
-
-    // Convert markdown to HTML
-    final html = md.markdownToHtml(content, extensionSet: md.ExtensionSet.gitHubFlavored);
-
-    try {
-      // Create a temporary HTML file
-      final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/temp_markdown.html');
-
-      // Write HTML with basic styling
-      final styledHtml =
-          '''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; }
-        h1, h2, h3, h4, h5, h6 { font-weight: bold; margin: 1em 0 0.5em 0; }
-        p { margin: 0.5em 0; }
-        code { font-family: Monaco, Courier, monospace; background-color: #f5f5f5; padding: 2px 4px; }
-        pre { background-color: #f5f5f5; padding: 10px; border-radius: 4px; }
-        blockquote { margin-left: 20px; padding-left: 10px; border-left: 4px solid #ccc; color: #666; }
-        ul, ol { margin: 0.5em 0; padding-left: 2em; }
-    </style>
-</head>
-<body>
-$html
-</body>
-</html>
-''';
-
-      await tempFile.writeAsString(styledHtml);
-
-      // Use textutil to convert HTML to RTF and copy to clipboard
-      final result = await Process.run('sh', ['-c', 'textutil -convert rtf -stdout "${tempFile.path}" | pbcopy']);
-
-      // Clean up temp file
-      if (await tempFile.exists()) {
-        await tempFile.delete();
-      }
-
-      if (result.exitCode == 0) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rich text copied to clipboard (paste into Word)'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 3)));
-      } else {
-        throw Exception('textutil failed: ${result.stderr}');
+        if (result.exitCode == 0) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)));
+        } else {
+          throw Exception('textutil failed: ${result.stderr}');
+        }
+      } finally {
+        // Always clean up temp file
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
       }
     } catch (e) {
-      // Fallback to plain text if RTF conversion fails
       Clipboard.setData(ClipboardData(text: content));
-
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied as plain text (RTF conversion failed)'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 2)));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied as plain text (RTF conversion failed)'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)));
     }
   }
 
@@ -480,8 +408,11 @@ $html
     final appState = ref.watch(appStateProvider);
     final preferencesAsync = ref.watch(preferencesProvider);
 
-    // Handle scroll requests
-    _handleScrollRequest(appState.scrollToHeading, appState.scrollRequestId);
+    // Handle scroll requests via listener (not in build)
+    ref.listen(appStateProvider.select((s) => s.scrollRequestId), (prev, next) {
+      final state = ref.read(appStateProvider);
+      _handleScrollRequest(state.scrollToHeading, state.scrollRequestId);
+    });
 
     return preferencesAsync.when(
       data: (preferences) => GestureDetector(

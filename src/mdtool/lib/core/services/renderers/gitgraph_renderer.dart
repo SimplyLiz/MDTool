@@ -148,12 +148,13 @@ class GitGraphRenderer extends GraphRenderer {
       // Parse commit
       if (trimmed.startsWith('commit ')) {
         final message = trimmed.substring(7).trim();
+        final branchIndex = branches.indexWhere((b) => b.name == currentBranch);
         commits.add(GitCommit(
           id: 'c${commits.length + 1}',
           message: message,
           branch: currentBranch,
           x: commits.length.toDouble(),
-          y: branches.indexWhere((b) => b.name == currentBranch).toDouble(),
+          y: (branchIndex >= 0 ? branchIndex : 0).toDouble(),
         ));
         continue;
       }
@@ -163,8 +164,8 @@ class GitGraphRenderer extends GraphRenderer {
         final sourceBranch = trimmed.substring(6).trim();
         final targetBranchIndex = branches.indexWhere((b) => b.name == currentBranch);
         final sourceBranchIndex = branches.indexWhere((b) => b.name == sourceBranch);
-        
-        if (sourceBranchIndex >= 0) {
+
+        if (sourceBranchIndex >= 0 && targetBranchIndex >= 0) {
           commits.add(GitCommit(
             id: 'm${commits.length + 1}',
             message: 'Merge $sourceBranch',
@@ -315,9 +316,10 @@ class GitGraphPainter extends CustomPainter {
       final x = startX + (commit.x * stepX);
       final y = startY + (commit.y * stepY);
       
-      final branchColor = data.branches
-          .firstWhere((b) => b.name == commit.branch)
-          .color;
+      final matchingBranch = data.branches
+          .where((b) => b.name == commit.branch)
+          .firstOrNull;
+      final branchColor = matchingBranch?.color ?? Colors.grey;
       
       // Draw connection to previous commit on same branch
       if (i > 0) {

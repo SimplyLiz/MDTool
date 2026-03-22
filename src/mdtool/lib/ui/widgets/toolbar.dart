@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:markdown/markdown.dart' as md_convert;
 import '../../core/providers/app_state_provider.dart';
 import '../../core/models/app_state.dart';
 import '../../core/services/file_service.dart';
@@ -290,8 +292,18 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
     if (appState.currentFile == null) return;
 
     try {
-      // Open the HTML file we created earlier
-      final htmlPath = '/Users/lisa/markdown-viewer.html';
+      final tempDir = Directory.systemTemp;
+      final htmlPath = '${tempDir.path}/mdtool_preview.html';
+
+      // Generate HTML from current content
+      final content = appState.content;
+      final htmlContent = '''<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.6;max-width:800px;margin:0 auto;padding:20px;}
+code{background:#f5f5f5;padding:2px 4px;border-radius:3px;}pre{background:#f5f5f5;padding:10px;border-radius:4px;overflow-x:auto;}</style>
+</head><body>${md_convert.markdownToHtml(content, extensionSet: md_convert.ExtensionSet.gitHubFlavored)}</body></html>''';
+      await File(htmlPath).writeAsString(htmlContent);
+
       await NativeBridgeService.showQuickLook(htmlPath);
 
       if (context.mounted) {

@@ -16,6 +16,10 @@ import 'core/models/app_state.dart';
 // Global container reference for accessing providers from method channel
 ProviderContainer? _globalContainer;
 
+// Queue for file open requests that arrive before the app is ready
+String? _pendingFileToOpen;
+bool _appIsReady = false;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -35,19 +39,14 @@ void main() async {
       final filePath = call.arguments as String;
       print("DEBUG: Received file to open from Finder: $filePath");
 
-      // Open the file using the app state provider
-      if (_globalContainer != null) {
-        try {
-          final fileService = FileService();
-          final content = await fileService.readFile(filePath);
-          _globalContainer!.read(appStateProvider.notifier).openFile(filePath, content);
-          print("DEBUG: Successfully opened file: $filePath");
-        } catch (e) {
-          print("ERROR: Failed to open file from Finder: $e");
-        }
-      } else {
-        print("ERROR: Global container not initialized");
+      // If app isn't ready yet, queue the request
+      if (!_appIsReady || _globalContainer == null) {
+        print("DEBUG: App not ready, queuing file open request");
+        _pendingFileToOpen = filePath;
+        return;
       }
+
+      await _openFileFromFinder(filePath);
     }
   });
 
@@ -67,12 +66,62 @@ void main() async {
   );
 }
 
-class MDToolApp extends ConsumerWidget {
+/// Opens a file from Finder in single-file preview mode
+Future<void> _openFileFromFinder(String filePath) async {
+  if (_globalContainer == null) {
+    print("ERROR: Global container not initialized");
+    return;
+  }
+
+  try {
+    final fileService = FileService();
+    final content = await fileService.readFile(filePath);
+
+    // Open file in single-file mode (preview mode, no folder tree auto-expand)
+    _globalContainer!.read(appStateProvider.notifier).openFileFromExternal(filePath, content);
+
+    print("DEBUG: Successfully opened file in preview mode: $filePath");
+  } catch (e) {
+    print("ERROR: Failed to open file from Finder: $e");
+  }
+}
+
+/// Called when the app is ready to process pending file open requests
+void _onAppReady() {
+  _appIsReady = true;
+
+  // Process any pending file open request
+  if (_pendingFileToOpen != null) {
+    final filePath = _pendingFileToOpen!;
+    _pendingFileToOpen = null;
+    print("DEBUG: Processing queued file open request: $filePath");
+    _openFileFromFinder(filePath);
+  }
+}
+
+class MDToolApp extends ConsumerStatefulWidget {
   const MDToolApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MDToolApp> createState() => _MDToolAppState();
+}
+
+class _MDToolAppState extends ConsumerState<MDToolApp> {
+  bool _hasSignaledReady = false;
+
+  @override
+  Widget build(BuildContext context) {
     final preferencesAsync = ref.watch(preferencesProvider);
+
+    // Signal app ready after first frame
+    if (!_hasSignaledReady) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_hasSignaledReady) {
+          _hasSignaledReady = true;
+          _onAppReady();
+        }
+      });
+    }
     
     return preferencesAsync.when(
       data: (preferences) {

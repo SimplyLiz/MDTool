@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class OpenAIResponse {
@@ -195,9 +196,7 @@ class OpenAIService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/chat/completions');
-      print('DEBUG [OpenAIService]: Making request to: $uri');
-      print('DEBUG [OpenAIService]: Model: $model');
-      print('DEBUG [OpenAIService]: Messages count: ${messages.length}');
+      debugPrint('OpenAI request: $uri, model: $model, messages: ${messages.length}');
 
       final response = await http.post(
         uri,
@@ -213,7 +212,7 @@ class OpenAIService {
         }),
       ).timeout(const Duration(seconds: 30));
 
-      print('DEBUG [OpenAIService]: Response status code: ${response.statusCode}');
+      debugPrint('OpenAI response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -233,11 +232,10 @@ class OpenAIService {
         }
         throw Exception('No response content from OpenAI API');
       } else if (response.statusCode == 401) {
-        print('DEBUG [OpenAIService]: 401 Unauthorized - Invalid API key');
+        debugPrint('OpenAI: 401 Unauthorized');
         throw Exception('Invalid API key. Please check your OpenAI API key in preferences.');
       } else if (response.statusCode == 429) {
-        print('DEBUG [OpenAIService]: 429 response from OpenAI API');
-        print('DEBUG [OpenAIService]: Response body: ${response.body}');
+        debugPrint('OpenAI: 429 rate limited');
         final data = jsonDecode(response.body);
         final error = data['error'] as Map<String, dynamic>? ?? {};
         final errorType = error['type'] as String? ?? '';
@@ -254,15 +252,13 @@ class OpenAIService {
           throw Exception('OpenAI rate limit exceeded: $message');
         }
       } else if (response.statusCode == 400) {
-        print('DEBUG [OpenAIService]: 400 Bad request');
-        print('DEBUG [OpenAIService]: Response body: ${response.body}');
+        debugPrint('OpenAI: 400 Bad request');
         final data = jsonDecode(response.body);
         final error = data['error'] as Map<String, dynamic>? ?? {};
         final message = error['message'] as String? ?? 'Bad request';
         throw Exception('OpenAI API error: $message');
       } else {
-        print('DEBUG [OpenAIService]: Unexpected status ${response.statusCode}');
-        print('DEBUG [OpenAIService]: Response body: ${response.body}');
+        debugPrint('OpenAI: unexpected status ${response.statusCode}');
         throw Exception('OpenAI API error: ${response.statusCode} - ${response.body}');
       }
     } on SocketException {

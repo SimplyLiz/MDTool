@@ -238,7 +238,9 @@ class ChartRenderer extends GraphRenderer {
             touchTooltipData: BarTouchTooltipData(
               getTooltipColor: (group) => isDark ? Colors.grey[800]! : Colors.grey[200]!,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                final point = chartData.data[group.x.toInt()];
+                final idx = group.x.toInt();
+                if (idx < 0 || idx >= chartData.data.length) return null;
+                final point = chartData.data[idx];
                 return BarTooltipItem(
                   '${point.label ?? 'Data'}\n${_formatValue(point.y)}',
                   TextStyle(color: isDark ? Colors.white : Colors.black),
@@ -587,6 +589,7 @@ class ChartRenderer extends GraphRenderer {
   }
   
   double _getMaxValue(List<ChartDataPoint> data) {
+    if (data.isEmpty) return 1.0;
     return data.map((point) => point.y).reduce(math.max);
   }
   

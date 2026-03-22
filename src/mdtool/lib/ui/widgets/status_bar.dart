@@ -89,7 +89,7 @@ class StatusBar extends ConsumerWidget {
   }
 
   String _getFileName(String filePath) {
-    return filePath.split('/').last;
+    return path.basename(filePath);
   }
 
   /// Build breadcrumb widget for status bar
@@ -112,7 +112,9 @@ class StatusBar extends ConsumerWidget {
       maxSegments: 4,
       currentIsTappable: false,
       items: breadcrumbItems,
-      onTap: (index, item) {}, // No action needed in status bar
+      onTap: (index, item) {
+        // Could navigate to folder in sidebar in the future
+      },
     );
   }
   
@@ -124,18 +126,21 @@ class StatusBar extends ConsumerWidget {
     if (folderRoot == null) {
       // Fallback to showing directory path without filename
       final directory = path.dirname(currentFile);
-      final parts = directory.split('/').where((part) => part.isNotEmpty).toList();
+      final parts = path.split(directory).where((part) => part.isNotEmpty && part != path.separator).toList();
       final items = <BreadcrumbItem>[];
-      
+
       // Add root
-      items.add(const BreadcrumbItem('/', fullPath: '/'));
-      
+      items.add(BreadcrumbItem(path.separator, fullPath: path.separator));
+
       // Add each directory segment (excluding filename)
-      String currentPath = '';
+      String currentBreadcrumbPath = '';
       for (int i = 0; i < parts.length; i++) {
         final part = parts[i];
-        currentPath += '/$part';
-        items.add(BreadcrumbItem(part, fullPath: currentPath));
+        currentBreadcrumbPath = path.join(currentBreadcrumbPath, part);
+        if (!currentBreadcrumbPath.startsWith(path.separator)) {
+          currentBreadcrumbPath = path.separator + currentBreadcrumbPath;
+        }
+        items.add(BreadcrumbItem(part, fullPath: currentBreadcrumbPath));
       }
       
       return items;
@@ -151,13 +156,13 @@ class StatusBar extends ConsumerWidget {
     
     // If current directory is deeper than root, add the relative path
     if (directory.startsWith(folderRoot) && directory.length > folderRoot.length) {
-      final relativePath = directory.substring(folderRoot.length + 1);
-      final parts = relativePath.split('/').where((part) => part.isNotEmpty).toList();
-      
-      String currentPath = folderRoot;
+      final relativePath = path.relative(directory, from: folderRoot);
+      final parts = path.split(relativePath).where((part) => part.isNotEmpty && part != '.').toList();
+
+      String currentSegmentPath = folderRoot;
       for (final part in parts) {
-        currentPath += '/$part';
-        items.add(BreadcrumbItem(part, fullPath: currentPath));
+        currentSegmentPath = path.join(currentSegmentPath, part);
+        items.add(BreadcrumbItem(part, fullPath: currentSegmentPath));
       }
     }
     

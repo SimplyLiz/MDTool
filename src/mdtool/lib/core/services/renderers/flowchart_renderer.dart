@@ -200,7 +200,8 @@ class FlowchartRenderer extends GraphRenderer {
                 ..strokeWidth = 2
                 ..style = PaintingStyle.stroke,
               builder: (Node node) {
-                final flowNode = flowData.nodes.firstWhere((n) => n.id == node.key?.value);
+                final flowNode = flowData.nodes.where((n) => n.id == node.key?.value).firstOrNull;
+                if (flowNode == null) return const SizedBox.shrink();
                 return _buildNodeWidget(flowNode, isDark);
               },
             ),

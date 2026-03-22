@@ -136,3 +136,8 @@ src/mdtool/android/fastlane/test_output
 .build_manager/
 build/
 deploy/
+
+# MCP / CKB tooling
+.ckb/
+.mcp.json
+package-lock.json

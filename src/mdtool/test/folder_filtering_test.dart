@@ -113,7 +113,7 @@ class TestDirectoryBuilder {
   /// Creates a test directory structure from a map of relative paths to content
   Future<Directory> createTestStructure(String name, Map<String, String> structure) async {
     final tempDir = Directory.systemTemp;
-    final testDir = Directory(path.join(tempDir.path, 'md_tool_test_$name'));
+    final testDir = Directory(path.join(tempDir.path, 'mdtool_test_$name'));
     
     if (await testDir.exists()) {
       await testDir.delete(recursive: true);
@@ -140,7 +140,7 @@ class TestDirectoryBuilder {
   /// Creates a deeply nested structure beyond MD Tool's recursion limit
   Future<Directory> createDeepStructure(int depth) async {
     final tempDir = Directory.systemTemp;
-    final testDir = Directory(path.join(tempDir.path, 'md_tool_deep_test'));
+    final testDir = Directory(path.join(tempDir.path, 'mdtool_deep_test'));
     
     if (await testDir.exists()) {
       await testDir.delete(recursive: true);

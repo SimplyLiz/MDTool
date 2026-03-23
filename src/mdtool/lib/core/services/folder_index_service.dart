@@ -59,9 +59,16 @@ class FolderIndexService {
   /// Public API for use by providers to ensure consistent cache keys
   Future<String> canonicalizePath(String path) async {
     try {
-      final resolved = await File(path).resolveSymbolicLinks();
-      return p.normalize(resolved);
-    } catch (_) {
+      // First check if it's a directory
+      if (await Directory(path).exists()) {
+        final resolved = await Directory(path).resolveSymbolicLinks();
+        return p.normalize(resolved);
+      } else {
+        // Fall back to file resolution for files
+        final resolved = await File(path).resolveSymbolicLinks();
+        return p.normalize(resolved);
+      }
+    } catch (e) {
       return p.normalize(path);
     }
   }

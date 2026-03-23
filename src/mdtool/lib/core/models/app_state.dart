@@ -1,15 +1,20 @@
 import 'package:equatable/equatable.dart';
+import 'tab_item.dart';
 
 enum ActiveWindow { primary, preview, secondary }
+
+enum AppMode { overview, project }
 
 class AppState extends Equatable {
   final String? currentFile;
   final String content;
+  final String originalContent; // Track original file content
   final bool isEditMode;
   final bool isDirty;
   final bool isSplitScreenMode;
   final String? secondaryFile;
   final String secondaryContent;
+  final String originalSecondaryContent; // Track original secondary file content
   final bool isSecondaryDirty;
   final bool isFolderSidebarVisible;
   final bool isPreviewVisible;
@@ -21,15 +26,23 @@ class AppState extends Equatable {
   final String? droppedFolder;
   final String? currentFolderRoot;
   final ActiveWindow activeWindow;
+  final AppMode appMode;
+  final bool isSingleFileMode; // True when file opened from Finder, folder tree not auto-expanded
+
+  // Tab management
+  final List<TabItem> openTabs;
+  final String? activeTabId;
 
   const AppState({
     this.currentFile,
     this.content = '',
+    this.originalContent = '',
     this.isEditMode = false,
     this.isDirty = false,
     this.isSplitScreenMode = false,
     this.secondaryFile,
     this.secondaryContent = '',
+    this.originalSecondaryContent = '',
     this.isSecondaryDirty = false,
     this.isFolderSidebarVisible = false,
     this.isPreviewVisible = false,
@@ -41,16 +54,22 @@ class AppState extends Equatable {
     this.droppedFolder,
     this.currentFolderRoot,
     this.activeWindow = ActiveWindow.primary,
+    this.appMode = AppMode.overview,
+    this.isSingleFileMode = false,
+    this.openTabs = const [],
+    this.activeTabId,
   });
 
   AppState copyWith({
     String? currentFile,
     String? content,
+    String? originalContent,
     bool? isEditMode,
     bool? isDirty,
     bool? isSplitScreenMode,
     String? secondaryFile,
     String? secondaryContent,
+    String? originalSecondaryContent,
     bool? isSecondaryDirty,
     bool? isFolderSidebarVisible,
     bool? isPreviewVisible,
@@ -62,15 +81,23 @@ class AppState extends Equatable {
     String? droppedFolder,
     String? currentFolderRoot,
     ActiveWindow? activeWindow,
+    AppMode? appMode,
+    bool? isSingleFileMode,
+    bool clearDroppedFolder = false,
+    bool clearCurrentFolderRoot = false,
+    List<TabItem>? openTabs,
+    String? activeTabId,
   }) {
     return AppState(
       currentFile: currentFile ?? this.currentFile,
       content: content ?? this.content,
+      originalContent: originalContent ?? this.originalContent,
       isEditMode: isEditMode ?? this.isEditMode,
       isDirty: isDirty ?? this.isDirty,
       isSplitScreenMode: isSplitScreenMode ?? this.isSplitScreenMode,
       secondaryFile: secondaryFile ?? this.secondaryFile,
       secondaryContent: secondaryContent ?? this.secondaryContent,
+      originalSecondaryContent: originalSecondaryContent ?? this.originalSecondaryContent,
       isSecondaryDirty: isSecondaryDirty ?? this.isSecondaryDirty,
       isFolderSidebarVisible: isFolderSidebarVisible ?? this.isFolderSidebarVisible,
       isPreviewVisible: isPreviewVisible ?? this.isPreviewVisible,
@@ -79,21 +106,37 @@ class AppState extends Equatable {
       scrollToHeading: scrollToHeading ?? this.scrollToHeading,
       scrollRequestId: scrollRequestId ?? this.scrollRequestId,
       folderPickerRequestId: folderPickerRequestId ?? this.folderPickerRequestId,
-      droppedFolder: droppedFolder ?? this.droppedFolder,
-      currentFolderRoot: currentFolderRoot ?? this.currentFolderRoot,
+      droppedFolder: clearDroppedFolder ? null : (droppedFolder ?? this.droppedFolder),
+      currentFolderRoot: clearCurrentFolderRoot ? null : (currentFolderRoot ?? this.currentFolderRoot),
       activeWindow: activeWindow ?? this.activeWindow,
+      appMode: appMode ?? this.appMode,
+      isSingleFileMode: isSingleFileMode ?? this.isSingleFileMode,
+      openTabs: openTabs ?? this.openTabs,
+      activeTabId: activeTabId ?? this.activeTabId,
     );
+  }
+
+  /// Get the currently active tab, or null if none
+  TabItem? get activeTab {
+    if (activeTabId == null) return null;
+    try {
+      return openTabs.firstWhere((t) => t.id == activeTabId);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
   List<Object?> get props => [
         currentFile,
         content,
+        originalContent,
         isEditMode,
         isDirty,
         isSplitScreenMode,
         secondaryFile,
         secondaryContent,
+        originalSecondaryContent,
         isSecondaryDirty,
         isFolderSidebarVisible,
         isPreviewVisible,
@@ -105,5 +148,9 @@ class AppState extends Equatable {
         droppedFolder,
         currentFolderRoot,
         activeWindow,
+        appMode,
+        isSingleFileMode,
+        openTabs,
+        activeTabId,
       ];
 }

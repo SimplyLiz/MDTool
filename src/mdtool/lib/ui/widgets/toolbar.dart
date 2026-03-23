@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:markdown/markdown.dart' as md_convert;
 import '../../core/providers/app_state_provider.dart';
+import '../../core/models/app_state.dart';
 import '../../core/services/file_service.dart';
 import '../../core/services/native_bridge_service.dart';
 import '../../core/services/scroll_sync_service.dart';
@@ -97,6 +100,9 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
     final appStateNotifier = ref.read(appStateProvider.notifier);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 800;
+    final isVeryNarrow = screenWidth < 600;
 
     return AppBar(
       title: Text(appState.currentFile != null ? _getFileName(appState.currentFile!) : 'MD Tool'),
@@ -106,16 +112,6 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
         tooltip: appState.isFolderSidebarVisible ? 'Hide Folder Sidebar' : 'Show Folder Sidebar',
       ),
       actions: [
-        // New File button - always visible
-        IconButton(icon: const Icon(Icons.note_add), onPressed: () => _newFile(context, ref), tooltip: 'New File'),
-        // Add Folder button
-        IconButton(icon: const Icon(Icons.folder_open), onPressed: () => _openFolder(context, ref), tooltip: 'Open Folder'),
-        // Diff Comparison button
-        IconButton(
-          icon: const Icon(Icons.compare_arrows), 
-          onPressed: () => _openDiffComparison(context, ref), 
-          tooltip: 'Text Diff Comparison'
-        ),
         // AI Chat button - always visible
         Consumer(
           builder: (context, ref, child) {
@@ -131,44 +127,17 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
           },
         ),
         if (appState.currentFile != null) ...[
-          IconButton(icon: const Icon(Icons.save), onPressed: appState.isDirty ? () => _saveFile(context, ref) : null, tooltip: 'Save'),
-          IconButton(
-            icon: Icon(appState.isEditMode ? Icons.edit : Icons.preview, color: Theme.of(context).colorScheme.primary),
-            onPressed: () => appStateNotifier.toggleMode(),
-            tooltip: appState.isEditMode ? 'Switch to Preview (Cmd+R)' : 'Switch to Edit (Cmd+R)',
-          ),
-          IconButton(
+          // Preview toggle - hide on narrow screens
+          if (!isNarrow) IconButton(
             icon: Icon(appState.isPreviewVisible ? Icons.preview : Icons.preview_outlined, color: appState.isPreviewVisible ? Theme.of(context).colorScheme.primary : null),
             onPressed: () => _togglePreview(ref),
             tooltip: appState.isPreviewVisible ? 'Hide Preview' : 'Edit with Live Preview',
           ),
-          IconButton(
+          // Split screen - hide on narrow screens
+          if (!isNarrow) IconButton(
             icon: Icon(appState.isSplitScreenMode && !appState.isPreviewVisible ? Icons.call_merge : Icons.call_split, color: appState.isSplitScreenMode && !appState.isPreviewVisible ? Theme.of(context).colorScheme.primary : null),
             onPressed: () => _openSplitScreen(context, ref),
             tooltip: appState.isSplitScreenMode && !appState.isPreviewVisible ? 'Exit Split Screen' : 'Open Second File',
-          ),
-          IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: () => _exportToPDF(context, ref), tooltip: 'Export PDF'),
-          Consumer(
-            builder: (context, ref, child) {
-              final preferences = ref.watch(preferencesProvider).valueOrNull;
-              final isOllamaEnabled = preferences?.ollamaEnabled ?? false;
-
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.chat, color: isOllamaEnabled ? Theme.of(context).colorScheme.primary : null),
-                    onPressed: () => _showDocumentChat(context, ref),
-                    tooltip: 'Document Chat',
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.smart_toy, color: isOllamaEnabled ? Theme.of(context).colorScheme.primary : null),
-                    onPressed: () => _showOllamaAssistant(context, ref),
-                    tooltip: 'Ollama Assistant',
-                  ),
-                ],
-              );
-            },
           ),
         ],
         PopupMenuButton<String>(
@@ -176,11 +145,20 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
           tooltip: 'More options',
           onSelected: (value) {
             switch (value) {
+              case 'close_folder':
+                _closeFolder(context, ref);
+                break;
               case 'preferences':
                 _showPreferences(context);
                 break;
               case 'about':
                 _showAbout(context);
+                break;
+              case 'export_pdf':
+                _exportToPDF(context, ref);
+                break;
+              case 'diff_comparison':
+                _openDiffComparison(context, ref);
                 break;
               case 'show_html':
                 _showHTMLInBrowser(context, ref);
@@ -191,7 +169,23 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (context) => [
+            // Show Close Folder option only in project mode
+            if (appState.appMode == AppMode.project) ...[
+              const PopupMenuItem(
+                value: 'close_folder',
+                child: Row(children: [Icon(Icons.close), SizedBox(width: 8), Text('Close Folder')]),
+              ),
+              const PopupMenuDivider(),
+            ],
+            const PopupMenuItem(
+              value: 'diff_comparison',
+              child: Row(children: [Icon(Icons.compare_arrows), SizedBox(width: 8), Text('Text Diff Comparison')]),
+            ),
             if (appState.currentFile != null) ...[
+              const PopupMenuItem(
+                value: 'export_pdf',
+                child: Row(children: [Icon(Icons.picture_as_pdf), SizedBox(width: 8), Text('Export PDF')]),
+              ),
               const PopupMenuItem(
                 value: 'show_html',
                 child: Row(children: [Icon(Icons.web), SizedBox(width: 8), Text('Show HTML in Browser')]),
@@ -298,8 +292,18 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
     if (appState.currentFile == null) return;
 
     try {
-      // Open the HTML file we created earlier
-      final htmlPath = '/Users/lisa/markdown-viewer.html';
+      final tempDir = Directory.systemTemp;
+      final htmlPath = '${tempDir.path}/mdtool_preview.html';
+
+      // Generate HTML from current content
+      final content = appState.content;
+      final htmlContent = '''<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.6;max-width:800px;margin:0 auto;padding:20px;}
+code{background:#f5f5f5;padding:2px 4px;border-radius:3px;}pre{background:#f5f5f5;padding:10px;border-radius:4px;overflow-x:auto;}</style>
+</head><body>${md_convert.markdownToHtml(content, extensionSet: md_convert.ExtensionSet.gitHubFlavored)}</body></html>''';
+      await File(htmlPath).writeAsString(htmlContent);
+
       await NativeBridgeService.showQuickLook(htmlPath);
 
       if (context.mounted) {
@@ -451,5 +455,9 @@ class MDToolbar extends ConsumerWidget implements PreferredSizeWidget {
     Navigator.of(context).pushNamed('/diff', arguments: args);
   }
 
+  void _closeFolder(BuildContext context, WidgetRef ref) {
+    final appStateNotifier = ref.read(appStateProvider.notifier);
+    appStateNotifier.closeFolderAndReturnToOverview();
+  }
 
 }

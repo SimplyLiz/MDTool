@@ -97,15 +97,31 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
   @override
   Widget build(BuildContext context) {
     ref.listen(appStateProvider, (previous, current) {
+      // Skip auto-navigation when in single file mode
+      if (current.isSingleFileMode) {
+        // Clear cached directory so expandToFolder triggers a fresh scan
+        _currentDirectory = null;
+        // Only handle folder picker requests and dropped folders in single file mode
+        if (previous?.folderPickerRequestId != current.folderPickerRequestId) {
+          _handleFolderPickerRequest(current.folderPickerRequestId);
+        }
+        if (previous?.droppedFolder != current.droppedFolder &&
+            current.droppedFolder != null &&
+            current.droppedFolder!.isNotEmpty) {
+          _handleDroppedFolder(current.droppedFolder!);
+        }
+        return;
+      }
+
       if (previous?.currentFile != current.currentFile) {
         final currentFile = current.currentFile;
         if (currentFile != null) {
           final fileDirectory = currentFile.substring(0, currentFile.lastIndexOf('/'));
-          
+
           // Check if auto-navigation is enabled
           final preferences = ref.read(preferencesProvider).valueOrNull;
           final autoNavigate = preferences?.autoNavigateToFileFolder ?? false;
-          
+
           // Auto-navigate to file's directory if enabled, different from current, and no explicit folder root
           if (autoNavigate && _currentDirectory != fileDirectory && current.currentFolderRoot == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -114,14 +130,25 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           }
         }
       }
-      
+
+      // Handle currentFolderRoot changes (e.g., when expanding from single file mode)
+      if (previous?.currentFolderRoot != current.currentFolderRoot &&
+          current.currentFolderRoot != null &&
+          _currentDirectory != current.currentFolderRoot) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scanForMarkdownFiles(directoryPath: current.currentFolderRoot);
+        });
+      }
+
       // Handle folder picker requests from toolbar
       if (previous?.folderPickerRequestId != current.folderPickerRequestId) {
         _handleFolderPickerRequest(current.folderPickerRequestId);
       }
-      
+
       // Handle dropped folders
-      if (previous?.droppedFolder != current.droppedFolder && current.droppedFolder != null) {
+      if (previous?.droppedFolder != current.droppedFolder &&
+          current.droppedFolder != null &&
+          current.droppedFolder!.isNotEmpty) {
         _handleDroppedFolder(current.droppedFolder!);
       }
     });
@@ -182,12 +209,19 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
   
   /// Build virtualized tree using ListView.builder for optimal performance
   Widget _buildVirtualizedTree() {
+    final appState = ref.watch(appStateProvider);
+
+    // In single file mode, show the current file with option to expand folder
+    if (appState.isSingleFileMode && appState.currentFile != null) {
+      return _buildSingleFileView(appState.currentFile!);
+    }
+
     final flattenedItems = _treeController.getFlattenedVisibleItems();
-    
+
     if (flattenedItems.isEmpty) {
       return _buildEmptyState();
     }
-    
+
     return ListView.builder(
       key: _listKey,
       controller: _scrollController,
@@ -198,6 +232,90 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
         final item = flattenedItems[index];
         return _buildTreeItem(item, index);
       },
+    );
+  }
+
+  /// Build single file view when opened from Finder
+  Widget _buildSingleFileView(String filePath) {
+    final fileName = filePath.split('/').last;
+    final parentFolder = filePath.substring(0, filePath.lastIndexOf('/'));
+    final parentFolderName = parentFolder.split('/').last;
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Current file indicator
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.description,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fileName,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'in $parentFolderName',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Show folder button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                ref.read(appStateProvider.notifier).expandToFolder();
+              },
+              icon: const Icon(Icons.folder_open, size: 18),
+              label: const Text('Show Folder Contents'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Info text
+          Text(
+            'Click to browse other files in the same folder',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
   
@@ -262,7 +380,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
               child: Icon(
                 folder.isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
                 size: 16,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(width: 4),
@@ -294,7 +412,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           folder.name,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         subtitle: subtitleText != null 
@@ -302,7 +420,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
               subtitleText, 
               style: TextStyle(
                 fontSize: 11, 
-                color: isScanning ? Theme.of(context).colorScheme.primary : Colors.grey[600],
+                color: isScanning ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 fontStyle: isScanning ? FontStyle.italic : FontStyle.normal,
               )
             )
@@ -373,13 +491,13 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
       leading: Icon(
         Icons.description, 
         size: 16, 
-        color: isCurrentFile ? Theme.of(context).colorScheme.primary : Colors.grey[600]
+        color: isCurrentFile ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)
       ),
       title: Text(
         file.name,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           fontWeight: isCurrentFile ? FontWeight.w600 : FontWeight.normal, 
-          color: isCurrentFile ? Theme.of(context).colorScheme.primary : null,
+          color: isCurrentFile ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
         ),
       ),
       selected: isSelected,
@@ -395,11 +513,11 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
         children: [
           Icon(Icons.folder_open, size: 48, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text('No directory selected', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+          Text('No directory selected', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 14)),
           const SizedBox(height: 8),
           Text(
             'Open a markdown file or select a folder to explore',
-            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 12),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -674,10 +792,20 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
   }
   
   Future<void> _openFile(String filePath) async {
+    if (!mounted) return;
+    
     try {
       final fileService = FileService();
       final content = await fileService.readFile(filePath);
-      ref.read(appStateProvider.notifier).openFile(filePath, content);
+      
+      if (!mounted) return;
+      
+      // Use the confirmation method if there are unsaved changes
+      final success = await ref.read(appStateProvider.notifier).openFileWithConfirmation(context, filePath, content);
+      if (!success) {
+        // User cancelled, don't show any error message
+        return;
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -702,8 +830,29 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
         position.dx + 1,
         position.dy + 1,
       ),
-      items: [
-        PopupMenuItem(
+      items: <PopupMenuEntry<dynamic>>[
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.create_new_folder, size: 16),
+              SizedBox(width: 8),
+              Text('New Folder'),
+            ],
+          ),
+          onTap: () => _createNewFolder(folder.path),
+        ),
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.note_add, size: 16),
+              SizedBox(width: 8),
+              Text('New Document'),
+            ],
+          ),
+          onTap: () => _createNewDocument(folder.path),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.folder_open, size: 16),
@@ -713,7 +862,28 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           ),
           onTap: () => _setAsBaseFolder(folder.path),
         ),
-        PopupMenuItem(
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.open_in_new, size: 16),
+              SizedBox(width: 8),
+              Text('Reveal in Finder'),
+            ],
+          ),
+          onTap: () => _revealInFinder(folder.path),
+        ),
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16),
+              SizedBox(width: 8),
+              Text('Rename'),
+            ],
+          ),
+          onTap: () => _renameFolder(folder.path),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.delete_outline, size: 16, color: Colors.red),
@@ -723,7 +893,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           ),
           onTap: () => _deleteFolder(folder.path),
         ),
-        PopupMenuItem(
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.chat, size: 16),
@@ -746,8 +916,8 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
         position.dx + 1,
         position.dy + 1,
       ),
-      items: [
-        PopupMenuItem(
+      items: <PopupMenuEntry<dynamic>>[
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.open_in_new, size: 16),
@@ -757,7 +927,18 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           ),
           onTap: () => _openFile(file.path),
         ),
-        PopupMenuItem(
+        PopupMenuItem<dynamic>(
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16),
+              SizedBox(width: 8),
+              Text('Rename'),
+            ],
+          ),
+          onTap: () => _renameFile(file.path),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.delete_outline, size: 16, color: Colors.red),
@@ -767,7 +948,7 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
           ),
           onTap: () => _deleteFile(file.path),
         ),
-        PopupMenuItem(
+        PopupMenuItem<dynamic>(
           child: Row(
             children: [
               Icon(Icons.chat, size: 16),
@@ -821,6 +1002,376 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
     }
   }
   
+  Future<void> _createNewDocument(String folderPath) async {
+    try {
+      final fileService = FileService();
+      final newFilePath = '$folderPath/New Document.md';
+      
+      // Check if file already exists
+      final file = File(newFilePath);
+      if (await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A file named "New Document.md" already exists'))
+          );
+        }
+        return;
+      }
+      
+      // Create the new document with basic markdown content
+      const initialContent = '''# New Document
+
+Start writing your markdown content here...
+''';
+      
+      await fileService.writeFile(newFilePath, initialContent);
+      
+      // Refresh the folder to show the new file
+      await _refreshFolderContents(folderPath);
+      
+      // Open the new file
+      await _openFile(newFilePath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New document created and opened'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create new document: $e'))
+        );
+      }
+    }
+  }
+  
+  Future<void> _createNewFolder(String parentPath) async {
+    String? newName;
+    
+    await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        final TextEditingController controller = TextEditingController(text: 'New Folder');
+        
+        return AlertDialog(
+          title: const Text('New Folder'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Folder Name',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) {
+              newName = value.trim();
+              Navigator.of(dialogContext).pop();
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                newName = controller.text.trim();
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    if (newName == null || newName!.isEmpty) {
+      return;
+    }
+    
+    try {
+      final newFolderPath = '$parentPath/$newName';
+      final newDirectory = Directory(newFolderPath);
+      
+      // Check if folder already exists
+      if (await newDirectory.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('A folder named "$newName" already exists'))
+          );
+        }
+        return;
+      }
+      
+      // Create the new folder
+      await newDirectory.create(recursive: true);
+      
+      // Refresh the parent folder to show the new folder
+      await _refreshFolderContents(parentPath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Folder "$newName" created successfully'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create folder: $e'))
+        );
+      }
+    }
+  }
+  
+  Future<void> _revealInFinder(String folderPath) async {
+    try {
+      if (Platform.isMacOS) {
+        await Process.run('open', [folderPath]);
+      } else if (Platform.isWindows) {
+        await Process.run('explorer', [folderPath]);
+      } else {
+        // Linux - try xdg-open
+        await Process.run('xdg-open', [folderPath]);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to reveal folder: $e'))
+        );
+      }
+    }
+  }
+  
+  Future<void> _refreshFolderContents(String folderPath) async {
+    // Find the folder tree item and refresh its contents
+    final flattenedItems = _treeController.getFlattenedVisibleItems();
+    for (final item in flattenedItems) {
+      if (item is FolderTreeItem && item.path == folderPath) {
+        // Mark as not loaded to force refresh
+        item.isLoaded = false;
+        item.children.clear();
+        
+        // If the folder is expanded, reload its contents
+        if (item.isExpanded) {
+          await _loadFolderContents(item);
+          setState(() {});
+        }
+        break;
+      }
+    }
+  }
+  
+  Future<void> _renameFolder(String folderPath) async {
+    final folderName = folderPath.split('/').last;
+    final parentPath = folderPath.substring(0, folderPath.lastIndexOf('/'));
+    
+    String? newName;
+    
+    await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        final TextEditingController controller = TextEditingController(text: folderName);
+        
+        return AlertDialog(
+          title: const Text('Rename Folder'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Folder Name',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) {
+              newName = value.trim();
+              Navigator.of(dialogContext).pop();
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                newName = controller.text.trim();
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Rename'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    if (newName == null || newName!.isEmpty || newName == folderName) {
+      return;
+    }
+    
+    try {
+      final oldDirectory = Directory(folderPath);
+      final newPath = '$parentPath/$newName';
+      final newDirectory = Directory(newPath);
+      
+      // Check if target already exists
+      if (await newDirectory.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('A folder named "$newName" already exists'))
+          );
+        }
+        return;
+      }
+      
+      // Rename the folder
+      await oldDirectory.rename(newPath);
+      
+      // Update the app state if this was the current folder root
+      final appState = ref.read(appStateProvider);
+      if (appState.currentFolderRoot == folderPath) {
+        ref.read(appStateProvider.notifier).setCurrentFolderRoot(newPath);
+      }
+      
+      // Refresh the parent folder to show the renamed folder
+      await _refreshFolderContents(parentPath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Folder renamed to "$newName"'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to rename folder: $e'))
+        );
+      }
+    }
+  }
+  
+  Future<void> _renameFile(String filePath) async {
+    final fileName = filePath.split('/').last;
+    final fileNameWithoutExtension = fileName.contains('.') 
+        ? fileName.substring(0, fileName.lastIndexOf('.'))
+        : fileName;
+    final fileExtension = fileName.contains('.') 
+        ? fileName.substring(fileName.lastIndexOf('.'))
+        : '';
+    final parentPath = filePath.substring(0, filePath.lastIndexOf('/'));
+    
+    String? newName;
+    
+    await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        final TextEditingController controller = TextEditingController(text: fileNameWithoutExtension);
+        
+        return AlertDialog(
+          title: const Text('Rename File'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'File Name (without extension)',
+                  border: OutlineInputBorder(),
+                ),
+                onSubmitted: (value) {
+                  newName = value.trim();
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              if (fileExtension.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Extension: $fileExtension',
+                    style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(dialogContext).colorScheme.onSurface.withValues(alpha: 0.6)
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                newName = controller.text.trim();
+                controller.dispose();
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Rename'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    if (newName == null || newName!.isEmpty || newName == fileNameWithoutExtension) {
+      return;
+    }
+    
+    try {
+      final oldFile = File(filePath);
+      final newFileName = '$newName$fileExtension';
+      final newPath = '$parentPath/$newFileName';
+      final newFile = File(newPath);
+      
+      // Check if target already exists
+      if (await newFile.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('A file named "$newFileName" already exists'))
+          );
+        }
+        return;
+      }
+      
+      // Rename the file
+      await oldFile.rename(newPath);
+      
+      // Update the app state if this was the current file
+      final appState = ref.read(appStateProvider);
+      if (appState.currentFile == filePath) {
+        // Read the content and update to new path
+        final fileService = FileService();
+        final content = await fileService.readFile(newPath);
+        ref.read(appStateProvider.notifier).openFile(newPath, content);
+      }
+      
+      // Refresh the parent folder to show the renamed file
+      await _refreshFolderContents(parentPath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File renamed to "$newFileName"'))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to rename file: $e'))
+        );
+      }
+    }
+  }
+  
   void _handleFolderPickerRequest(int? requestId) {
     if (requestId == null || _lastFolderPickerRequestId == requestId) {
       return;
@@ -838,11 +1389,9 @@ class _FolderSidebarState extends ConsumerState<FolderSidebar> {
     // Scan the dropped folder
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scanForMarkdownFiles(directoryPath: folderPath);
-    });
-    
-    // Clear the dropped folder state to prevent repeated handling
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(appStateProvider.notifier).setDroppedFolder(''); // Clear with empty string
+      
+      // Clear the dropped folder state after scanning is initiated
+      ref.read(appStateProvider.notifier).clearDroppedFolder();
     });
   }
   

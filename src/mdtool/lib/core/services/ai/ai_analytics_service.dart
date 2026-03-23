@@ -122,7 +122,7 @@ class AIAnalyticsService {
 
     // Get app data directory
     final homeDir = Platform.environment['HOME'] ?? '';
-    final appDataDir = path.join(homeDir, '.md_tool');
+    final appDataDir = path.join(homeDir, '.mdtool');
     await Directory(appDataDir).create(recursive: true);
     _dataFilePath = path.join(appDataDir, 'ai_analytics.json');
 

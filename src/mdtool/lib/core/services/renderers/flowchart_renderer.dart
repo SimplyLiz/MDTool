@@ -169,24 +169,45 @@ class FlowchartRenderer extends GraphRenderer {
       graph.addEdge(Node.Id(edge.from), Node.Id(edge.to));
     }
     
-    return InteractiveViewer(
-      child: GraphView(
-        graph: graph,
-        algorithm: SugiyamaAlgorithm(
-          SugiyamaConfiguration()
-            ..orientation = SugiyamaConfiguration.ORIENTATION_TOP_BOTTOM
-            ..levelSeparation = 50
-            ..nodeSeparation = 50,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (flowData.title != null) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text(
+              flowData.title!,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+        Expanded(
+          child: InteractiveViewer(
+            child: GraphView(
+              graph: graph,
+              algorithm: SugiyamaAlgorithm(
+                SugiyamaConfiguration()
+                  ..orientation = SugiyamaConfiguration.ORIENTATION_TOP_BOTTOM
+                  ..levelSeparation = 60
+                  ..nodeSeparation = 80,
+              ),
+              paint: Paint()
+                ..color = isDark ? Colors.white70 : Colors.black54
+                ..strokeWidth = 2
+                ..style = PaintingStyle.stroke,
+              builder: (Node node) {
+                final flowNode = flowData.nodes.where((n) => n.id == node.key?.value).firstOrNull;
+                if (flowNode == null) return const SizedBox.shrink();
+                return _buildNodeWidget(flowNode, isDark);
+              },
+            ),
+          ),
         ),
-        paint: Paint()
-          ..color = isDark ? Colors.white : Colors.black
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke,
-        builder: (Node node) {
-          final flowNode = flowData.nodes.firstWhere((n) => n.id == node.key?.value);
-          return _buildNodeWidget(flowNode, isDark);
-        },
-      ),
+      ],
     );
   }
   
@@ -195,31 +216,55 @@ class FlowchartRenderer extends GraphRenderer {
     final textColor = isDark ? Colors.white : Colors.black;
     final borderColor = _getNodeColor(node.type);
     
-    Widget content = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        border: Border.all(color: borderColor, width: 2),
-        borderRadius: _getNodeBorderRadius(node.type),
-      ),
-      child: Text(
-        node.label,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
+    Widget content;
     
-    // Wrap decision nodes in diamond shape
     if (node.type == FlowNodeType.decision) {
-      content = Transform.rotate(
-        angle: 0, // Keep text horizontal
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          child: content,
+      // Diamond shape for decision nodes
+      content = Container(
+        width: 80,
+        height: 80,
+        child: CustomPaint(
+          painter: DiamondPainter(
+            color: backgroundColor ?? Colors.grey[100]!,
+            borderColor: borderColor,
+            borderWidth: 2,
+          ),
+          child: Center(
+            child: Container(
+              width: 60,
+              child: Text(
+                node.label,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Regular rounded rectangle for other nodes
+      content = Container(
+        constraints: const BoxConstraints(minWidth: 80, maxWidth: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: Border.all(color: borderColor, width: 2),
+          borderRadius: _getNodeBorderRadius(node.type),
+        ),
+        child: Text(
+          node.label,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
         ),
       );
     }
@@ -294,4 +339,42 @@ enum FlowNodeType {
   end,
   process,
   decision,
+}
+
+/// Custom painter for diamond-shaped decision nodes
+class DiamondPainter extends CustomPainter {
+  final Color color;
+  final Color borderColor;
+  final double borderWidth;
+  
+  DiamondPainter({
+    required this.color,
+    required this.borderColor,
+    required this.borderWidth,
+  });
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth;
+    
+    final path = Path()
+      ..moveTo(size.width / 2, 0) // Top
+      ..lineTo(size.width, size.height / 2) // Right
+      ..lineTo(size.width / 2, size.height) // Bottom
+      ..lineTo(0, size.height / 2) // Left
+      ..close();
+    
+    canvas.drawPath(path, paint);
+    canvas.drawPath(path, borderPaint);
+  }
+  
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

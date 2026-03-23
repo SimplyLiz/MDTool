@@ -38,5 +38,29 @@
 	<string>MD Tool needs access to external drives to scan for and open Markdown files.</string>
 	<key>NSNetworkVolumesUsageDescription</key>
 	<string>MD Tool needs access to network drives to scan for and open Markdown files.</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Markdown Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>net.daringfireball.markdown</string>
+				<string>public.plain-text</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>md</string>
+				<string>markdown</string>
+				<string>mdown</string>
+				<string>mkd</string>
+				<string>mkdn</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

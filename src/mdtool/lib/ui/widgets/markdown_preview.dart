@@ -12,7 +12,10 @@ import '../../core/providers/preferences_provider.dart';
 import '../../core/services/scroll_sync_service.dart';
 import '../../core/services/file_service.dart';
 import '../../core/services/block_index.dart';
-import 'fenced_code_block_builder.dart';
+import 'graph_element_builder.dart';
+import '../../core/services/graph_renderer.dart';
+import 'package:flutter_highlight/themes/github.dart' as gh_theme;
+import 'package:flutter_highlight/themes/vs2015.dart' as vs_dark_theme;
 
 class MarkdownPreview extends ConsumerStatefulWidget {
   const MarkdownPreview({super.key});
@@ -25,6 +28,7 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
   late ScrollController _scrollController;
   late ScrollSyncService _scrollSyncService;
   late BlockIndex _blockIndex;
+  late GraphRenderingService _graphService;
   int? _lastScrollRequestId;
   final GlobalKey _markdownKey = GlobalKey();
 
@@ -37,11 +41,26 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
     _scrollController = ScrollController();
     _scrollSyncService = ScrollSyncService();
     _scrollSyncService.registerPreviewController(_scrollController);
+    
+    // Initialize graph rendering service
+    _graphService = GraphRenderingService();
+    
+    // Initialize async and rebuild when done
+    _initializeGraphService();
 
     // Initialize block index with current content
     final appState = ref.read(appStateProvider);
     _blockIndex = buildBlockIndex(appState.content);
     _scrollSyncService.registerBlockIndex(_blockIndex);
+  }
+  
+  Future<void> _initializeGraphService() async {
+    await _graphService.initialize();
+    if (mounted) {
+      setState(() {
+        // Force rebuild after graph service is initialized
+      });
+    }
   }
 
   @override
@@ -56,6 +75,7 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
   @override
   void dispose() {
     _scrollController.dispose();
+    // _graphService has no resources that need explicit disposal
     super.dispose();
   }
 
@@ -65,7 +85,6 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
     }
 
     _lastScrollRequestId = requestId;
-    print('Handling scroll request for heading: $heading');
 
     // Clear the scroll request after handling
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -223,129 +242,57 @@ class _MarkdownPreviewState extends ConsumerState<MarkdownPreview> {
         try {
           Actions.invoke(context, SelectAllTextIntent(SelectionChangedCause.keyboard));
         } catch (e2) {
-          print('Select all failed: $e2');
+          debugPrint('Select all failed: $e2');
         }
       }
     }
   }
 
-  void _copyMarkdownAsFormatted() async {
+  void _copyMarkdownAsFormatted() => _copyAsRtf('Rich text copied to clipboard');
+
+  void _copyAsRichText() => _copyAsRtf('Rich text copied to clipboard (paste into Word)');
+
+  void _copyAsRtf(String successMessage) async {
     final appState = ref.read(appStateProvider);
     final content = appState.content;
-
-    // Convert markdown to HTML
     final html = md.markdownToHtml(content, extensionSet: md.ExtensionSet.gitHubFlavored);
 
     try {
-      // Create a temporary HTML file
       final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/temp_markdown.html');
+      final tempFile = File('${tempDir.path}/mdtool_copy_${DateTime.now().millisecondsSinceEpoch}.html');
 
-      // Write HTML with basic styling
-      final styledHtml =
-          '''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; }
-        h1, h2, h3, h4, h5, h6 { font-weight: bold; margin: 1em 0 0.5em 0; }
-        p { margin: 0.5em 0; }
-        code { font-family: Monaco, Courier, monospace; background-color: #f5f5f5; padding: 2px 4px; }
-        pre { background-color: #f5f5f5; padding: 10px; border-radius: 4px; }
-        blockquote { margin-left: 20px; padding-left: 10px; border-left: 4px solid #ccc; color: #666; }
-        ul, ol { margin: 0.5em 0; padding-left: 2em; }
-    </style>
-</head>
-<body>
-$html
-</body>
-</html>
-''';
+      final styledHtml = '''<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.6;}
+h1,h2,h3,h4,h5,h6{font-weight:bold;margin:1em 0 .5em 0;}
+p{margin:.5em 0;}code{font-family:Monaco,Courier,monospace;background-color:#f5f5f5;padding:2px 4px;}
+pre{background-color:#f5f5f5;padding:10px;border-radius:4px;}
+blockquote{margin-left:20px;padding-left:10px;border-left:4px solid #ccc;color:#666;}
+ul,ol{margin:.5em 0;padding-left:2em;}
+</style></head><body>$html</body></html>''';
 
       await tempFile.writeAsString(styledHtml);
 
-      // Use textutil to convert HTML to RTF and copy to clipboard
-      final result = await Process.run('sh', ['-c', 'textutil -convert rtf -stdout "${tempFile.path}" | pbcopy']);
+      try {
+        final result = await Process.run('sh', ['-c', 'textutil -convert rtf -stdout "${tempFile.path}" | pbcopy']);
 
-      // Clean up temp file
-      if (await tempFile.exists()) {
-        await tempFile.delete();
-      }
-
-      if (result.exitCode == 0) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rich text copied to clipboard'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 2)));
-      } else {
-        throw Exception('textutil failed: ${result.stderr}');
-      }
-    } catch (e) {
-      // Fallback to plain text if RTF conversion fails
-      Clipboard.setData(ClipboardData(text: content));
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied as plain text (RTF conversion failed)'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 2)));
-    }
-  }
-
-  void _copyAsRichText() async {
-    final appState = ref.read(appStateProvider);
-    final content = appState.content;
-
-    // Convert markdown to HTML
-    final html = md.markdownToHtml(content, extensionSet: md.ExtensionSet.gitHubFlavored);
-
-    try {
-      // Create a temporary HTML file
-      final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/temp_markdown.html');
-
-      // Write HTML with basic styling
-      final styledHtml =
-          '''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; }
-        h1, h2, h3, h4, h5, h6 { font-weight: bold; margin: 1em 0 0.5em 0; }
-        p { margin: 0.5em 0; }
-        code { font-family: Monaco, Courier, monospace; background-color: #f5f5f5; padding: 2px 4px; }
-        pre { background-color: #f5f5f5; padding: 10px; border-radius: 4px; }
-        blockquote { margin-left: 20px; padding-left: 10px; border-left: 4px solid #ccc; color: #666; }
-        ul, ol { margin: 0.5em 0; padding-left: 2em; }
-    </style>
-</head>
-<body>
-$html
-</body>
-</html>
-''';
-
-      await tempFile.writeAsString(styledHtml);
-
-      // Use textutil to convert HTML to RTF and copy to clipboard
-      final result = await Process.run('sh', ['-c', 'textutil -convert rtf -stdout "${tempFile.path}" | pbcopy']);
-
-      // Clean up temp file
-      if (await tempFile.exists()) {
-        await tempFile.delete();
-      }
-
-      if (result.exitCode == 0) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rich text copied to clipboard (paste into Word)'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 3)));
-      } else {
-        throw Exception('textutil failed: ${result.stderr}');
+        if (result.exitCode == 0) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)));
+        } else {
+          throw Exception('textutil failed: ${result.stderr}');
+        }
+      } finally {
+        // Always clean up temp file
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
       }
     } catch (e) {
-      // Fallback to plain text if RTF conversion fails
       Clipboard.setData(ClipboardData(text: content));
-
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied as plain text (RTF conversion failed)'), behavior: SnackBarBehavior.floating, duration: Duration(seconds: 2)));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied as plain text (RTF conversion failed)'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)));
     }
   }
 
@@ -461,23 +408,18 @@ $html
     final appState = ref.watch(appStateProvider);
     final preferencesAsync = ref.watch(preferencesProvider);
 
-    // Handle scroll requests
-    _handleScrollRequest(appState.scrollToHeading, appState.scrollRequestId);
+    // Handle scroll requests via listener (not in build)
+    ref.listen(appStateProvider.select((s) => s.scrollRequestId), (prev, next) {
+      final state = ref.read(appStateProvider);
+      _handleScrollRequest(state.scrollToHeading, state.scrollRequestId);
+    });
 
     return preferencesAsync.when(
-      data: (preferences) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Theme.of(context).dividerColor, width: 1),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: GestureDetector(
-            onSecondaryTapDown: (details) {
-              _showContextMenu(details.globalPosition);
-            },
-            child: SelectionArea(
+      data: (preferences) => GestureDetector(
+        onSecondaryTapDown: (details) {
+          _showContextMenu(details.globalPosition);
+        },
+        child: SelectionArea(
               child: CallbackShortcuts(
                 bindings: {const SingleActivator(LogicalKeyboardKey.keyA, meta: true): _selectAll, const SingleActivator(LogicalKeyboardKey.keyC, meta: true): _copyMarkdownAsFormatted, const SingleActivator(LogicalKeyboardKey.keyC, meta: true, shift: true): _copyAsRichText},
                 child: NotificationListener<ScrollNotification>(
@@ -502,9 +444,7 @@ $html
                 ),
               ),
             ),
-          ),
         ),
-      ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('Error loading preferences: $error')),
     );
@@ -576,14 +516,18 @@ $html
       return const SizedBox(height: 8); // Empty line spacing
     }
 
-    // Use flutter_markdown to render this block
+    // Use flutter_markdown with GraphElementBuilder for all content
     return MarkdownBody(
       data: text,
       selectable: false,
       styleSheet: _buildStyleSheet(context, preferences),
       extensionSet: md.ExtensionSet([...md.ExtensionSet.gitHubFlavored.blockSyntaxes, md.TableSyntax()], [md.EmojiSyntax(), ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes]),
       builders: {
-        'code': FencedCodeBlockBuilder(isDarkTheme: Theme.of(context).brightness == Brightness.dark),
+        'code': GraphElementBuilder(
+          codeTheme: Theme.of(context).brightness == Brightness.dark 
+            ? vs_dark_theme.vs2015Theme 
+            : gh_theme.githubTheme,
+        ),
         'img': ImageElementBuilder(),
       },
       onTapLink: (text, href, title) {
@@ -612,7 +556,7 @@ $html
       a: TextStyle(color: colorScheme.primary, decoration: TextDecoration.underline, fontFamily: preferences.fontFamily),
 
       // Code
-      code: TextStyle(color: colorScheme.onSurface, backgroundColor: colorScheme.surfaceVariant, fontFamily: 'Monaco', fontSize: preferences.fontSize * 0.9),
+      code: TextStyle(color: colorScheme.onSurface, backgroundColor: colorScheme.surfaceContainerHighest, fontFamily: 'Monaco', fontSize: preferences.fontSize * 0.9),
       codeblockDecoration: const BoxDecoration(color: Colors.transparent),
       codeblockPadding: const EdgeInsets.all(12),
 
@@ -620,7 +564,7 @@ $html
       listBullet: TextStyle(color: colorScheme.onSurface, fontFamily: preferences.fontFamily),
 
       // Blockquotes
-      blockquote: TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontStyle: FontStyle.italic, fontFamily: preferences.fontFamily, fontSize: preferences.fontSize),
+      blockquote: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8), fontStyle: FontStyle.italic, fontFamily: preferences.fontFamily, fontSize: preferences.fontSize),
       blockquoteDecoration: BoxDecoration(
         border: Border(left: BorderSide(color: colorScheme.primary, width: 4)),
       ),
@@ -630,13 +574,13 @@ $html
       tableHead: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold, fontFamily: preferences.fontFamily, fontSize: preferences.fontSize),
       tableBody: TextStyle(color: colorScheme.onSurface, fontFamily: preferences.fontFamily, fontSize: preferences.fontSize),
       tableHeadAlign: TextAlign.left,
-      tableBorder: TableBorder.all(color: colorScheme.outline.withOpacity(0.3), width: 1),
+      tableBorder: TableBorder.all(color: colorScheme.outline.withValues(alpha: 0.3), width: 1),
       tableColumnWidth: const FlexColumnWidth(),
       tableCellsPadding: const EdgeInsets.all(8),
 
       // Horizontal rules
       horizontalRuleDecoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colorScheme.outline.withOpacity(0.3), width: 1)),
+        border: Border(top: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3), width: 1)),
       ),
     );
   }

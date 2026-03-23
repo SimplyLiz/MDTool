@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDTool - AI-Powered Markdown Editor</title>
+    <meta name="description" content="A professional cross-platform Markdown editor with AI analytics, integrated chat, and advanced document management. Native macOS and Windows support.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-brand">
+                <h1 class="logo">MDTool</h1>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#download">Download</a>
+                <a href="#" onclick="showDocumentation(); return false;">Docs</a>
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    The Markdown Editor<br>
+                    <span class="gradient-text">Powered by AI</span>
+                </h1>
+                <p class="hero-description">
+                    A cross-platform Markdown editor with AI analytics, integrated chat functionality, 
+                    and advanced document management. Native integration with macOS Finder and Windows Explorer.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn-primary">Download for macOS</button>
+                    <button class="btn-secondary">Download for Windows</button>
+                </div>
+                <p class="hero-note">Professional Markdown editor • No account required</p>
+            </div>
+            <div class="hero-image">
+                <div class="screenshot-placeholder">
+                    <div class="window-frame">
+                        <div class="window-controls">
+                            <span class="control close"></span>
+                            <span class="control minimize"></span>
+                            <span class="control maximize"></span>
+                        </div>
+                        <div class="window-content">
+                            <div class="editor-mockup">
+                                <div class="sidebar">
+                                    <div class="folder-item">📁 Documents</div>
+                                    <div class="file-item active">📄 README.md</div>
+                                    <div class="file-item">📄 guide.md</div>
+                                </div>
+                                <div class="editor-area">
+                                    <div class="editor-toolbar">
+                                        <span class="tool-item">B</span>
+                                        <span class="tool-item">I</span>
+                                        <span class="tool-item">💬</span>
+                                        <span class="tool-item">📊</span>
+                                    </div>
+                                    <div class="editor-content">
+                                        <div class="markdown-line"># Welcome to MDTool</div>
+                                        <div class="markdown-line">A powerful **Markdown editor** with AI features.</div>
+                                        <div class="markdown-line"></div>
+                                        <div class="markdown-line">## Features</div>
+                                        <div class="markdown-line">- AI-powered analytics</div>
+                                        <div class="markdown-line">- Real-time collaboration</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="container">
+                <h2 class="section-title">Powerful Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <h3>AI Analytics & Chat</h3>
+                        <p>Integrated AI services with OpenAI and Ollama support. Get insights, summaries, and chat about your documents in real-time.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📁</div>
+                        <h3>Native File Integration</h3>
+                        <p>Seamless "Open with MDTool" integration in macOS Finder and Windows Explorer. No more context switching.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Real-time Preview</h3>
+                        <p>Split-screen editing with live preview. See your Markdown rendered instantly as you type with syntax highlighting.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Graph Visualization</h3>
+                        <p>Support for Mermaid diagrams, flowcharts, and other graph renderers. Visualize complex data and relationships.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔍</div>
+                        <h3>Advanced Search</h3>
+                        <p>Full-text search across documents with quick navigation. Find what you need instantly across your entire library.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📄</div>
+                        <h3>PDF Export</h3>
+                        <p>High-quality PDF generation with bookmarks and formatting preservation. Share your work professionally.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3>Diff Viewer</h3>
+                        <p>Advanced diff comparison with multiple viewing modes. Track changes and collaborate effectively.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🏃</div>
+                        <h3>Performance First</h3>
+                        <p>Built-in metrics and performance tracking. Auto-save with configurable intervals keeps your work safe.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="platforms">
+            <div class="container">
+                <h2 class="section-title">Cross-Platform Support</h2>
+                <div class="platforms-grid">
+                    <div class="platform-card">
+                        <div class="platform-icon">🍎</div>
+                        <h3>macOS</h3>
+                        <p>Native macOS integration with Finder support and system-wide file associations.</p>
+                        <ul>
+                            <li>macOS 10.15 or later</li>
+                            <li>File associations included</li>
+                            <li>Native menu integration</li>
+                        </ul>
+                    </div>
+                    <div class="platform-card">
+                        <div class="platform-icon">🪟</div>
+                        <h3>Windows</h3>
+                        <p>Professional Windows installer with automatic file associations and Explorer integration.</p>
+                        <ul>
+                            <li>Windows 10/11 (64-bit)</li>
+                            <li>Context menu integration</li>
+                            <li>Start Menu shortcuts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="download" class="download">
+            <div class="container">
+                <h2 class="section-title">Get Started Today</h2>
+                <p class="section-description">Download MDTool and experience the future of Markdown editing.</p>
+                <div class="download-buttons">
+                    <div class="download-option">
+                        <button class="btn-download">
+                            <span class="download-icon">🍎</span>
+                            <div class="download-text">
+                                <div class="download-title">Download for macOS</div>
+                                <div class="download-subtitle">macOS 10.15 or later</div>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="download-option">
+                        <button class="btn-download">
+                            <span class="download-icon">🪟</span>
+                            <div class="download-text">
+                                <div class="download-title">Download for Windows</div>
+                                <div class="download-subtitle">Windows 10/11 (64-bit)</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                <div class="download-alternatives">
+                    <a href="#" class="download-link">Documentation</a>
+                    <span class="separator">•</span>
+                    <a href="#" class="download-link">Support</a>
+                    <span class="separator">•</span>
+                    <a href="#" class="download-link">Release Notes</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="tech-stack">
+            <div class="container">
+                <h2 class="section-title">Built with Modern Technology</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-icon">⚡</div>
+                        <div class="tech-name">Flutter</div>
+                        <div class="tech-description">Cross-platform UI framework</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🎯</div>
+                        <div class="tech-name">Dart</div>
+                        <div class="tech-description">Fast, productive language</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🧠</div>
+                        <div class="tech-name">AI Integration</div>
+                        <div class="tech-description">OpenAI & Ollama support</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">⚙️</div>
+                        <div class="tech-name">Riverpod</div>
+                        <div class="tech-description">State management</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>MDTool</h3>
+                    <p>The AI-powered Markdown editor for modern workflows.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Product</h4>
+                        <a href="#features">Features</a>
+                        <a href="#download">Download</a>
+                        <a href="#" onclick="showDocumentation(); return false;">Documentation</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Resources</h4>
+                        <a href="#" onclick="showDocumentation(); return false;">Documentation</a>
+                        <a href="#" onclick="showDocumentation('getting-started'); return false;">Tutorials</a>
+                        <a href="#">Release Notes</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Support</h4>
+                        <a href="#">Help Center</a>
+                        <a href="#">Contact</a>
+                        <a href="#">Bug Reports</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="#" onclick="showImpressum()">Impressum</a>
+                        <a href="#">Privacy Policy</a>
+                        <a href="#">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 TasteHub GmbH. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="docs.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

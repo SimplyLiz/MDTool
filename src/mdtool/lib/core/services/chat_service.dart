@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'ollama_service.dart';
 import 'openai_service.dart';
 import 'document_index_service.dart';
@@ -108,10 +109,10 @@ class ChatMessage {
     }
     
     return ChatMessage(
-      id: json['id'],
-      content: json['content'],
-      isUser: json['isUser'],
-      timestamp: DateTime.parse(json['timestamp']),
+      id: json['id'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      isUser: json['isUser'] as bool? ?? true,
+      timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
       context: json['context'],
       provider: provider,
       model: json['model'],
@@ -181,7 +182,7 @@ class ChatService {
       String? documentContext;
       
       if (useDocumentContext) {
-        print('DEBUG: [ENHANCED] Building context using strategy: ${_contextManager.activeStrategy.name}');
+        debugPrint('DEBUG: [ENHANCED] Building context using strategy: ${_contextManager.activeStrategy.name}');
         
         // Prepare file data for context strategies
         final documentsToUse = selectedDocuments != null
@@ -209,14 +210,14 @@ class ChatService {
         
         documentContext = contextResult.content;
         
-        print('DEBUG: Strategy: ${contextResult.strategyUsed}');
-        print('DEBUG: Token count: ${contextResult.tokenCount}');
-        print('DEBUG: Estimated cost: \$${contextResult.estimatedCost.toStringAsFixed(3)}');
-        print('DEBUG: Files used: ${contextResult.filesUsed.length}');
-        print('DEBUG: Explanation: ${contextResult.explanation}');
+        debugPrint('DEBUG: Strategy: ${contextResult.strategyUsed}');
+        debugPrint('DEBUG: Token count: ${contextResult.tokenCount}');
+        debugPrint('DEBUG: Estimated cost: \$${contextResult.estimatedCost.toStringAsFixed(3)}');
+        debugPrint('DEBUG: Files used: ${contextResult.filesUsed.length}');
+        debugPrint('DEBUG: Explanation: ${contextResult.explanation}');
         
         if (documentContext.isNotEmpty) {
-          print('DEBUG: Context preview: ${documentContext.substring(0, (documentContext.length).clamp(0, 200))}...');
+          debugPrint('DEBUG: Context preview: ${documentContext.substring(0, (documentContext.length).clamp(0, 200))}...');
         }
         
         // TODO: Update provider when riverpod is properly integrated
@@ -245,24 +246,33 @@ class ChatService {
         );
         finalProvider = routeDecision.provider;
         
-        print('DEBUG: Auto routing decision: ${routeDecision.provider.displayName}');
-        print('DEBUG: Reasoning: ${routeDecision.reasoning}');
-        print('DEBUG: Confidence: ${(routeDecision.confidence * 100).toInt()}%');
-        print('DEBUG: Estimated cost: \$${routeDecision.estimatedCost.toStringAsFixed(3)}');
+        debugPrint('DEBUG: Auto routing decision: ${routeDecision.provider.displayName}');
+        debugPrint('DEBUG: Reasoning: ${routeDecision.reasoning}');
+        debugPrint('DEBUG: Confidence: ${(routeDecision.confidence * 100).toInt()}%');
+        debugPrint('DEBUG: Estimated cost: \$${routeDecision.estimatedCost.toStringAsFixed(3)}');
       }
 
       // Check if usage is blocked for the selected provider
       if (_metricsService.isUsageBlocked(provider: finalProvider.name)) {
         final summary = _metricsService.getUsageSummary();
-        String limitMessage = 'OpenAI usage limit exceeded. ';
+        final limits = _metricsService.limits;
+
+        String limitMessage = 'Local usage limit exceeded (this is not an OpenAI API error).\n\n';
+
         if (summary.dailyLimitExceeded) {
-          limitMessage += 'Daily limit reached. ';
+          limitMessage += 'Daily limits: ${summary.totalTokensToday} / ${limits.dailyTokenLimit} tokens, ';
+          limitMessage += '\$${summary.totalCostToday.toStringAsFixed(3)} / \$${limits.dailyCostLimit.toStringAsFixed(2)}\n';
         }
         if (summary.monthlyLimitExceeded) {
-          limitMessage += 'Monthly limit reached. ';
+          limitMessage += 'Monthly limits: ${summary.totalTokensThisMonth} / ${limits.monthlyTokenLimit} tokens, ';
+          limitMessage += '\$${summary.totalCostThisMonth.toStringAsFixed(3)} / \$${limits.monthlyCostLimit.toStringAsFixed(2)}\n';
         }
-        limitMessage += 'Please adjust limits in preferences to continue, or use Ollama instead.';
-        
+
+        limitMessage += '\nTo continue:\n';
+        limitMessage += '• Adjust limits in Preferences → Usage Limits\n';
+        limitMessage += '• Or disable limits entirely\n';
+        limitMessage += '• Or use Ollama (always unlimited)';
+
         final errorMsg = ChatMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           content: limitMessage,
@@ -423,7 +433,7 @@ Be conversational, thorough, and demonstrate deep understanding of the provided 
             tokenCount: contextResult?.tokenCount ?? userMessage.length ~/ 4,
           );
         } catch (e) {
-          print('DEBUG: Error recording analytics: $e');
+          debugPrint('DEBUG: Error recording analytics: $e');
         }
       }
 
@@ -630,23 +640,27 @@ Be conversational, thorough, and demonstrate deep understanding of the provided 
 
   /// Calculate cost based on model and token usage
   double _calculateCost(String model, int inputTokens, int outputTokens) {
-    // OpenAI GPT-5 pricing (approximate, adjust as needed)
+    // OpenAI pricing per 1K tokens (updated 2025)
     const inputCostPer1KTokens = {
-      'gpt-5-nano': 0.0001,
-      'gpt-5-mini': 0.0002,
-      'gpt-5': 0.005,
-      'gpt-5-chat-latest': 0.003,
-    };
-    
-    const outputCostPer1KTokens = {
-      'gpt-5-nano': 0.0003,
-      'gpt-5-mini': 0.0006,
-      'gpt-5': 0.015,
-      'gpt-5-chat-latest': 0.009,
+      'gpt-4o': 0.0025,
+      'gpt-4o-mini': 0.00015,
+      'gpt-4-turbo': 0.01,
+      'gpt-4': 0.03,
+      'gpt-3.5-turbo': 0.0005,
+      'o3-mini': 0.0011,
     };
 
-    final inputRate = inputCostPer1KTokens[model] ?? 0.003;
-    final outputRate = outputCostPer1KTokens[model] ?? 0.009;
+    const outputCostPer1KTokens = {
+      'gpt-4o': 0.01,
+      'gpt-4o-mini': 0.0006,
+      'gpt-4-turbo': 0.03,
+      'gpt-4': 0.06,
+      'gpt-3.5-turbo': 0.0015,
+      'o3-mini': 0.0044,
+    };
+
+    final inputRate = inputCostPer1KTokens[model] ?? 0.0025;
+    final outputRate = outputCostPer1KTokens[model] ?? 0.01;
 
     final inputCost = (inputTokens / 1000) * inputRate;
     final outputCost = (outputTokens / 1000) * outputRate;

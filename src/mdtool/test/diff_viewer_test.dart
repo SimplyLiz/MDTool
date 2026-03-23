@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:md_tool/ui/widgets/diff_viewer.dart';
-import 'package:md_tool/ui/pages/diff_comparison_page.dart';
+import 'package:mdtool/ui/widgets/diff_viewer.dart';
+import 'package:mdtool/ui/pages/diff_comparison_page.dart';
 
 void main() {
   group('DiffViewer Tests', () {

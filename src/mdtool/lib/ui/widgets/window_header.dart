@@ -15,6 +15,7 @@ class WindowHeader extends ConsumerWidget {
   final VoidCallback? onOpenFile;
   final VoidCallback? onChat;
   final VoidCallback? onNewFile;
+  final VoidCallback? onSave;
   final ActiveWindow activeWindowType;
   final VoidCallback? onTap;
 
@@ -27,6 +28,7 @@ class WindowHeader extends ConsumerWidget {
     this.onOpenFile,
     this.onChat,
     this.onNewFile,
+    this.onSave,
     this.onTap,
   });
 
@@ -42,19 +44,9 @@ class WindowHeader extends ConsumerWidget {
       child: Container(
         height: 40,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isActive 
-              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-              : Theme.of(context).colorScheme.surfaceContainerHighest,
-          border: Border(
-            bottom: BorderSide(
-              color: isActive 
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                  : Theme.of(context).dividerColor,
-              width: isActive ? 2 : 1,
-            ),
-          ),
-        ),
+        color: isActive 
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Row(
           children: [
             Icon(
@@ -106,32 +98,72 @@ class WindowHeader extends ConsumerWidget {
                   ),
                   tooltip: 'New file',
                 ),
-              if (onChat != null)
+              // Toggle Edit/Preview button (only for editor windows)
+              if (windowType == WindowType.editor)
                 IconButton(
                   iconSize: 16,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   padding: const EdgeInsets.all(4),
-                  onPressed: onChat,
+                  onPressed: () => ref.read(appStateProvider.notifier).toggleMode(),
                   icon: Icon(
-                    Icons.chat_outlined,
+                    appState.isEditMode ? Icons.preview : Icons.edit,
                     size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  tooltip: 'Chat with this file',
+                  tooltip: appState.isEditMode ? 'Switch to Preview (Cmd+R)' : 'Switch to Edit (Cmd+R)',
                 ),
-              if (onOpenFile != null)
+              // Show Save button when file is loaded (but not in preview windows)
+              if (filePath != null && onSave != null && windowType != WindowType.preview)
                 IconButton(
                   iconSize: 16,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   padding: const EdgeInsets.all(4),
-                  onPressed: onOpenFile,
+                  onPressed: _shouldEnableSave(appState) ? onSave : null,
                   icon: Icon(
-                    Icons.folder_open_outlined,
+                    Icons.save,
                     size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: _shouldEnableSave(appState) 
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                   ),
-                  tooltip: 'Open file',
+                  tooltip: _shouldEnableSave(appState) ? 'Save file' : 'No changes to save',
                 ),
+              // Three-dot menu
+              PopupMenuButton<String>(
+                iconSize: 16,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: const EdgeInsets.all(4),
+                icon: Icon(
+                  Icons.more_vert,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                tooltip: 'More options',
+                onSelected: (value) => _handleMenuSelection(value, context, ref),
+                itemBuilder: (context) => [
+                  if (onChat != null)
+                    const PopupMenuItem<String>(
+                      value: 'chat',
+                      child: Row(
+                        children: [
+                          Icon(Icons.chat_outlined, size: 16),
+                          SizedBox(width: 8),
+                          Text('Chat about this file'),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuItem<String>(
+                    value: 'export_pdf',
+                    child: Row(
+                      children: [
+                        Icon(Icons.picture_as_pdf_outlined, size: 16),
+                        SizedBox(width: 8),
+                        Text('Export as PDF'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               if (onClose != null)
                 IconButton(
                   iconSize: 16,
@@ -169,6 +201,41 @@ class WindowHeader extends ConsumerWidget {
       case WindowType.preview:
         return Icons.preview_outlined;
     }
+  }
+
+  bool _shouldEnableSave(AppState appState) {
+    // Determine which window we're dealing with and check its dirty state
+    switch (activeWindowType) {
+      case ActiveWindow.primary:
+        return appState.isDirty && appState.currentFile != null;
+      case ActiveWindow.secondary:
+        return appState.isSecondaryDirty && appState.secondaryFile != null;
+      case ActiveWindow.preview:
+        // Preview window can save the primary file if it has changes
+        return appState.isDirty && appState.currentFile != null;
+    }
+  }
+
+  void _handleMenuSelection(String value, BuildContext context, WidgetRef ref) {
+    switch (value) {
+      case 'chat':
+        if (onChat != null) {
+          onChat!();
+        }
+        break;
+      case 'export_pdf':
+        _exportAsPdf(context, ref);
+        break;
+    }
+  }
+
+  void _exportAsPdf(BuildContext context, WidgetRef ref) {
+    // TODO: Implement PDF export functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('PDF export functionality coming soon'),
+      ),
+    );
   }
 }
 

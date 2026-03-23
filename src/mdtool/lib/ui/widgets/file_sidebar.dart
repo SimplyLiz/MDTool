@@ -1,12 +1,11 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import '../../core/providers/workspace_provider.dart';
-import '../../core/providers/preferences_provider.dart'; // for lastOpenedFile, optional open
+import '../../core/providers/preferences_provider.dart';
 // import your editor/navigation action that opens a file: openMarkdownFile(path)
 
-class f extends ConsumerStatefulWidget {
+class FileSidebar extends ConsumerStatefulWidget {
   final void Function(String path)? onOpenFile;
   const FileSidebar({super.key, this.onOpenFile});
 
@@ -46,7 +45,7 @@ class _FileSidebarState extends ConsumerState<FileSidebar> {
 
     return Container(
       width: 300,
-      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.35),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
       child: rootsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Workspace error: $e')),
@@ -156,7 +155,6 @@ class _DirectoryTileState extends State<_DirectoryTile> {
 
   @override
   Widget build(BuildContext context) {
-    final isExpanded = widget.expandedDirs.contains(widget.path);
     return ExpansionTile(
       key: PageStorageKey(widget.path),
       initiallyExpanded: widget.initiallyExpanded,

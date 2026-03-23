@@ -52,6 +52,7 @@ class SplitScreenView extends ConsumerWidget {
                         onChat: appState.currentFile != null 
                             ? () => WindowHeaderActions.openChatWithFile(context, appState.currentFile)
                             : null,
+                        onSave: () => _savePrimaryFile(ref, context),
                         onClose: appState.currentFile != null
                             ? () => ref.read(appStateProvider.notifier).closeFile()
                             : null,
@@ -105,6 +106,7 @@ class SplitScreenView extends ConsumerWidget {
                               onChat: appState.currentFile != null 
                                   ? () => WindowHeaderActions.openChatWithFile(context, appState.currentFile)
                                   : null,
+                              onSave: () => _savePrimaryFile(ref, context),
                               onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.preview),
                             ),
                             Expanded(
@@ -127,7 +129,8 @@ class SplitScreenView extends ConsumerWidget {
                                   onChat: appState.secondaryFile != null 
                                       ? () => WindowHeaderActions.openChatWithFile(context, appState.secondaryFile)
                                       : null,
-                                  onClose: () => ref.read(appStateProvider.notifier).closeSecondaryFile(),
+                                  onSave: () => _saveSecondaryFile(ref, context),
+                                  onClose: () => _closeSecondaryFileWithConfirmation(context, ref),
                                   onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.secondary),
                                 ),
                                 Expanded(
@@ -170,6 +173,7 @@ class SplitScreenView extends ConsumerWidget {
                                   filePath: null,
                                   onOpenFile: () => WindowHeaderActions.openFileDialog(ref, isSecondary: true),
                                   onNewFile: () => WindowHeaderActions.createNewFile(ref, isSecondary: true),
+                                  onSave: () => _saveSecondaryFile(ref, context),
                                   onTap: () => ref.read(appStateProvider.notifier).setActiveWindow(ActiveWindow.secondary),
                                 ),
                                 Expanded(child: _buildSecondaryPlaceholder(context, ref)),
@@ -303,18 +307,6 @@ class SplitScreenView extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          // Preview toggle
-          IconButton(
-            icon: Icon(
-              appState.isPreviewVisible ? Icons.preview : Icons.visibility,
-              size: 18,
-              color: appState.isPreviewVisible
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            onPressed: () => ref.read(appStateProvider.notifier).togglePreviewVisibility(),
-            tooltip: appState.isPreviewVisible ? 'Show Second File Editor' : 'Edit with Live Preview',
-          ),
           // Sync controls (only show in preview mode)
           _buildSyncControls(context, ref, appState),
         ],
@@ -416,6 +408,56 @@ class SplitScreenView extends ConsumerWidget {
     } catch (e) {
       // Handle error
       debugPrint('Error opening file in secondary pane: $e');
+    }
+  }
+
+  void _savePrimaryFile(WidgetRef ref, BuildContext context) async {
+    final appState = ref.read(appStateProvider);
+    if (appState.currentFile == null) return;
+
+    try {
+      final fileService = FileService();
+      await fileService.writeFile(appState.currentFile!, appState.content);
+      ref.read(appStateProvider.notifier).saveFile();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File saved successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save file: $e')),
+        );
+      }
+    }
+  }
+
+  void _closeSecondaryFileWithConfirmation(BuildContext context, WidgetRef ref) async {
+    await ref.read(appStateProvider.notifier).closeSecondaryFileWithConfirmation(context);
+  }
+
+  void _saveSecondaryFile(WidgetRef ref, BuildContext context) async {
+    final appState = ref.read(appStateProvider);
+    if (appState.secondaryFile == null) return;
+
+    try {
+      final fileService = FileService();
+      await fileService.writeFile(appState.secondaryFile!, appState.secondaryContent);
+      ref.read(appStateProvider.notifier).saveSecondaryFile();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Secondary file saved successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save secondary file: $e')),
+        );
+      }
     }
   }
 }

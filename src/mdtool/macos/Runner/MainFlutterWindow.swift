@@ -84,7 +84,7 @@ class MainFlutterWindow: NSWindow {
 
     // Directory permissions channel
     let directoryPermissionsChannel = FlutterMethodChannel(
-      name: "md_tool/directory_permissions",
+      name: "mdtool/directory_permissions",
       binaryMessenger: flutterViewController.engine.binaryMessenger
     )
 

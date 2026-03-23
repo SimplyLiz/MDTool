@@ -132,7 +132,8 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
       if (_isInitialized && mounted) {
         try {
           _textController.text = _codeController.text;
-          ref.read(appStateProvider.notifier).updateContent(_codeController.text);
+          // Defer provider update to avoid modifying during build
+          Future(() => ref.read(appStateProvider.notifier).updateContent(_codeController.text));
           _updateLineStartOffsets(_codeController.text);
         } catch (e) {
           // Ignore updates after disposal
@@ -555,8 +556,12 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
     
     // Update editor content when app state changes
     if (_codeController.text != appState.content) {
-      _codeController.text = appState.content;
-      _textController.text = appState.content;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _codeController.text = appState.content;
+          _textController.text = appState.content;
+        }
+      });
       
       // Re-anchor after content changes
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -713,18 +718,7 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
                     },
                   ),
                 },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                      width: 1,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: NotificationListener<ScrollNotification>(
+                child: NotificationListener<ScrollNotification>(
                       onNotification: (n) {
                         final isUpdate = n is ScrollUpdateNotification;
                         final isUser = n is UserScrollNotification && n.direction != ScrollDirection.idle;
@@ -770,16 +764,12 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
                             fontSize: preferences.fontSize,
                             height: 1.5,
                           ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                          ),
+                          decoration: const BoxDecoration(),
                           padding: const EdgeInsets.all(16),
                           expands: true,
                         ),
                       ),
                     ),
-                  ),
-                ),
               ),
             ),
           ),

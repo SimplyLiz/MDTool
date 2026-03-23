@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/preferences.dart';
 
 class PreferencesService {
-  static const String _preferencesKey = 'md_tool_preferences';
+  static const String _preferencesKey = 'mdtool_preferences';
   static PreferencesService? _instance;
   SharedPreferences? _prefs;
 

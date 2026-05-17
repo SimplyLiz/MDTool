@@ -14,6 +14,7 @@ process.on('SIGTERM', shutdown);
 
 function parseArgs(argv: string[]) {
   const i = argv.indexOf('--socket');
-  if (i < 0 || !argv[i + 1]) throw new Error('Usage: --socket <path>');
-  return { socket: argv[i + 1] };
+  const socket = argv[i + 1];
+  if (i < 0 || !socket) throw new Error('Usage: --socket <path>');
+  return { socket };
 }

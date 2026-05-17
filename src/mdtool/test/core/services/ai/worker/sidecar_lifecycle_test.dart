@@ -8,7 +8,7 @@ void main() {
     final mgr = SidecarLifecycleManager(
       binaryPath: () => '/fake/binary',
       socketPath: '/tmp/fake.sock',
-      spawnFn: (bin, args) async {
+      spawnFn: (bin, args, env) async {
         spawnCalls++;
         return _FakeProcess();
       },
@@ -26,7 +26,7 @@ void main() {
     final mgr = SidecarLifecycleManager(
       binaryPath: () => '/fake/binary',
       socketPath: '/tmp/fake.sock',
-      spawnFn: (bin, args) async {
+      spawnFn: (bin, args, env) async {
         spawnCalls++;
         return _FakeProcess(exits: exits.stream);
       },
@@ -42,7 +42,7 @@ void main() {
 }
 
 class _FakeProcess implements SidecarProcess {
-  _FakeProcess({Stream<int>? exits}) : _exits = exits ?? const Stream.empty();
+  _FakeProcess({Stream<int>? exits}) : _exits = exits ?? StreamController<int>().stream;
   final Stream<int> _exits;
   @override Stream<int> get exitCode => _exits;
   @override Future<void> kill() async {}

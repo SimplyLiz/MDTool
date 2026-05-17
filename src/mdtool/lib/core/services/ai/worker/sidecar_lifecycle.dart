@@ -22,7 +22,7 @@ class _RealProcess implements SidecarProcess {
 }
 
 typedef SpawnFn = Future<SidecarProcess> Function(
-    String binary, List<String> args);
+    String binary, List<String> args, Map<String, String> env);
 
 class SidecarStatus {
   final bool running;
@@ -66,10 +66,11 @@ class SidecarLifecycleManager {
 
   Future<SidecarStatus> _spawn() async {
     try {
-      await apiKeyResolver();
-      final proc = await spawnFn(binaryPath(), ['--socket', socketPath]);
+      final key = await apiKeyResolver();
+      final env = {...Platform.environment, if (key.isNotEmpty) 'ANTHROPIC_API_KEY': key};
+      final proc = await spawnFn(binaryPath(), ['--socket', socketPath], env);
       _proc = proc;
-      unawaited(proc.exitCode.first.then(_onExit).catchError((_) {}));
+      unawaited(proc.exitCode.first.then(_onExit));
       const status = SidecarStatus(running: true);
       _statusCtrl.add(status);
       return status;
@@ -89,8 +90,7 @@ class SidecarLifecycleManager {
   }
 
   static Future<SidecarProcess> _defaultSpawn(
-      String binary, List<String> args) async {
-    final env = Map<String, String>.from(Platform.environment);
+      String binary, List<String> args, Map<String, String> env) async {
     final p = await Process.start(binary, args, environment: env);
     return _RealProcess(p);
   }

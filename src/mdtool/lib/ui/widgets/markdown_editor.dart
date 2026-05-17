@@ -8,6 +8,7 @@ import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:highlight/languages/markdown.dart';
 import '../../core/providers/app_state_provider.dart';
 import '../../core/providers/preferences_provider.dart';
+import '../../core/providers/ai_intent_provider.dart';
 import '../../core/utils/undo_redo_controller.dart';
 import '../../core/services/auto_save_service.dart';
 import '../../core/services/search_service.dart';
@@ -15,6 +16,8 @@ import '../../core/services/markdown_shortcuts_service.dart';
 import '../../core/services/scroll_sync_service.dart';
 import '../../core/services/quicklook_service.dart';
 import 'find_dialog.dart';
+import 'ai/selection_detector.dart';
+import 'ai/ai_action.dart';
 
 class UndoIntent extends Intent {
   const UndoIntent();
@@ -754,19 +757,24 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
                         }
                         return false;
                       },
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onTapDown: (details) => _onEditorTap(details),
-                        child: CodeField(
-                          controller: _codeController,
-                          textStyle: TextStyle(
-                            fontFamily: preferences.fontFamily,
-                            fontSize: preferences.fontSize,
-                            height: 1.5,
+                      child: SelectionDetector(
+                        controller: _codeController,
+                        onAction: (AIIntent intent) =>
+                            ref.read(aiIntentProvider.notifier).state = intent,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTapDown: (details) => _onEditorTap(details),
+                          child: CodeField(
+                            controller: _codeController,
+                            textStyle: TextStyle(
+                              fontFamily: preferences.fontFamily,
+                              fontSize: preferences.fontSize,
+                              height: 1.5,
+                            ),
+                            decoration: const BoxDecoration(),
+                            padding: const EdgeInsets.all(16),
+                            expands: true,
                           ),
-                          decoration: const BoxDecoration(),
-                          padding: const EdgeInsets.all(16),
-                          expands: true,
                         ),
                       ),
                     ),

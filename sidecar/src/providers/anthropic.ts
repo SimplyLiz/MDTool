@@ -36,26 +36,7 @@ export function createAnthropicProvider(cfg: AnthropicConfig): ProviderClient {
       });
 
       let usage = { input: 0, output: 0 };
-      let pendingDone = false;
-
-      const iterator = (stream as AsyncIterable<any>)[Symbol.asyncIterator]();
-      while (true) {
-        const result = await iterator.next();
-        if (result.done) {
-          // Generator return value may carry final usage (e.g. finalMessage pattern).
-          const finalVal = result.value;
-          if (finalVal?.usage) {
-            usage = {
-              input: finalVal.usage.input_tokens ?? usage.input,
-              output: finalVal.usage.output_tokens ?? usage.output,
-            };
-          }
-          if (pendingDone) {
-            yield { kind: 'done', tokenUsage: usage, cost: estimateCost(usage, model) };
-          }
-          break;
-        }
-        const ev = result.value;
+      for await (const ev of stream as AsyncIterable<any>) {
         if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
           yield { kind: 'delta', text: ev.delta.text };
         } else if (ev.type === 'message_delta' && ev.usage) {
@@ -64,9 +45,7 @@ export function createAnthropicProvider(cfg: AnthropicConfig): ProviderClient {
             output: ev.usage.output_tokens ?? usage.output,
           };
         } else if (ev.type === 'message_stop') {
-          // Defer the 'done' event until after the iterator finishes so we can
-          // pick up any final usage from the generator's return value.
-          pendingDone = true;
+          yield { kind: 'done', tokenUsage: usage, cost: estimateCost(usage, model) };
         }
       }
     } catch (err: any) {

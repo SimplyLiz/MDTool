@@ -8,8 +8,8 @@ describe('AnthropicProvider', () => {
         stream: vi.fn(async function* () {
           yield { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Hel' } };
           yield { type: 'content_block_delta', delta: { type: 'text_delta', text: 'lo' } };
+          yield { type: 'message_delta', usage: { input_tokens: 10, output_tokens: 2 } };
           yield { type: 'message_stop' };
-          return { usage: { input_tokens: 10, output_tokens: 2 } };
         }),
       },
     };

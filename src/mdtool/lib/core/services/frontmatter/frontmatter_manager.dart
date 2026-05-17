@@ -57,7 +57,7 @@ class FrontmatterManager {
       if (!r.isValid) diagnostics.addAll(r.errors);
       fm = NyxFrontmatter.fromMap(nyxBlock);
     }
-    return DocContext(frontmatter: fm, bodyOffset: endIdx + 4, diagnostics: diagnostics);
+    return DocContext(frontmatter: fm, bodyOffset: endIdx + 5, diagnostics: diagnostics);
   }
 
   Future<void> _saveToMd(String path, NyxFrontmatter fm) async {
@@ -77,10 +77,10 @@ class FrontmatterManager {
         if (k != 'nyx') preserved[k.toString()] = v;
       });
       final rebuilt = StringBuffer('---\n');
-      preserved.forEach((k, v) => rebuilt.write('$k: ${_yamlInline(v)}\n'));
+      preserved.forEach((k, v) => rebuilt.write(_renderYamlEntry(k, v, indent: '')));
       rebuilt.write(blockText);
       rebuilt.write('---\n');
-      rebuilt.write(original.substring(endIdx + 4).trimLeft());
+      rebuilt.write(original.substring(endIdx + 5));
       newContent = rebuilt.toString();
     } else {
       newContent = '---\n$blockText---\n$original';
@@ -111,8 +111,23 @@ class FrontmatterManager {
   String _renderNyxBlockYaml(NyxFrontmatter fm) {
     final m = fm.toMap();
     final sb = StringBuffer('nyx:\n');
-    m.forEach((k, v) => sb.write('  $k: ${_yamlInline(v)}\n'));
+    m.forEach((k, v) => sb.write(_renderYamlEntry(k, v, indent: '  ')));
     return sb.toString();
+  }
+
+  /// Renders a single `key: value` entry with appropriate indent. If value is a
+  /// Map, emits a nested block. Maps with empty contents emit `key: {}` inline.
+  String _renderYamlEntry(String key, Object? value, {required String indent}) {
+    if (value is Map) {
+      final cast = value.cast<Object?, Object?>();
+      if (cast.isEmpty) return '$indent$key: {}\n';
+      final sb = StringBuffer('$indent$key:\n');
+      cast.forEach((kk, vv) {
+        sb.write(_renderYamlEntry(kk.toString(), vv, indent: '$indent  '));
+      });
+      return sb.toString();
+    }
+    return '$indent$key: ${_yamlInline(value)}\n';
   }
 
   String _yamlInline(Object? v) {

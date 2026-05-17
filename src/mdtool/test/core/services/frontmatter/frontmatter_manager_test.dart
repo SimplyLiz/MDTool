@@ -66,4 +66,26 @@ body
     expect(ctx.frontmatter.provider, NyxProvider.claude);
     expect(ctx.diagnostics, isNotEmpty);
   });
+
+  test('preserves non-empty sources map across save+load roundtrip', () async {
+    final f = File(p.join(tmp.path, 'doc.md'));
+    await f.writeAsString('---\ntitle: T\n---\nbody\n');
+    final mgr = FrontmatterManager();
+    await mgr.save(f.path, const NyxFrontmatter(
+      project: 'p',
+      sources: {'github': 'https://github.com/foo', 'depth': 3},
+    ));
+    final ctx = await mgr.load(f.path);
+    expect(ctx.frontmatter.sources, equals({'github': 'https://github.com/foo', 'depth': 3}));
+    expect(ctx.frontmatter.project, 'p');
+  });
+
+  test('save preserves leading blank lines in body', () async {
+    final f = File(p.join(tmp.path, 'doc.md'));
+    await f.writeAsString('---\ntitle: T\n---\n\n\nbody\n');
+    final mgr = FrontmatterManager();
+    await mgr.save(f.path, const NyxFrontmatter(project: 'p'));
+    final content = await f.readAsString();
+    expect(content, contains('\n\n\nbody'));
+  });
 }

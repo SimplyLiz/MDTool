@@ -3,4 +3,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 pnpm install --frozen-lockfile
 pnpm build
-pnpm pkg . --targets node18-macos-arm64,node18-macos-x64,node18-win-x64 --out-path dist-bin
+pnpm exec pkg . --targets node22-macos-arm64,node22-macos-x64,node22-win-x64 --out-path dist-bin

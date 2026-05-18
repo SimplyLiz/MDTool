@@ -18,14 +18,14 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "pkg": "^5.8.1",
+    "@yao-pkg/pkg": "^6.1.1",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
   },
   "bin": "dist/index.js",
   "pkg": {
-    "targets": ["node18-macos-arm64", "node18-macos-x64", "node18-win-x64"],
+    "targets": ["node22-macos-arm64", "node22-macos-x64", "node22-win-x64"],
     "outputPath": "dist-bin",
     "assets": ["package.json", "dist/**/*"]
   }

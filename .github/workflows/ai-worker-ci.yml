@@ -1,0 +1,46 @@
+name: AI Worker CI
+on:
+  pull_request:
+    paths: ['sidecar/**', 'src/mdtool/lib/core/services/ai/worker/**', 'src/mdtool/test/core/services/ai/worker/**']
+  push:
+    branches: [main]
+
+jobs:
+  sidecar-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'pnpm', cache-dependency-path: 'sidecar/pnpm-lock.yaml' }
+      - run: cd sidecar && pnpm install --frozen-lockfile
+      - run: cd sidecar && pnpm test
+
+  flutter-tests:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: 'stable' }
+      - run: cd src/mdtool && flutter pub get
+      - run: cd src/mdtool && flutter analyze
+      - run: cd src/mdtool && flutter test
+
+  bundle-size:
+    needs: sidecar-tests
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'pnpm', cache-dependency-path: 'sidecar/pnpm-lock.yaml' }
+      - run: bash sidecar/scripts/build-bundle.sh
+      - name: Check binary size under 80MB
+        run: |
+          size_bytes=$(stat -f%z sidecar/dist-bin/mdtool-ai-worker* | head -1)
+          echo "Size: $size_bytes bytes"
+          if [ "$size_bytes" -gt 83886080 ]; then
+            echo "Binary exceeds 80 MB cap (Phase 1 SLO)"; exit 1
+          fi

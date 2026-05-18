@@ -1,0 +1,32 @@
+{
+  "name": "mdtool-ai-worker",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=22.0.0" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsx src/index.ts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.35.0",
+    "json-rpc-2.0": "^1.7.0",
+    "pino": "^9.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "pkg": "^5.8.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "bin": "dist/index.js",
+  "pkg": {
+    "targets": ["node18-macos-arm64", "node18-macos-x64", "node18-win-x64"],
+    "outputPath": "dist-bin",
+    "assets": ["package.json", "dist/**/*"]
+  }
+}

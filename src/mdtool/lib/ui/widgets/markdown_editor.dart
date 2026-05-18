@@ -8,13 +8,20 @@ import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:highlight/languages/markdown.dart';
 import '../../core/providers/app_state_provider.dart';
 import '../../core/providers/preferences_provider.dart';
+import '../../core/providers/ai_intent_provider.dart';
+import '../../core/services/ai/worker/ai_worker_provider.dart';
 import '../../core/utils/undo_redo_controller.dart';
+import 'ai/streaming_diff/atomic_replace.dart';
+import 'ai/streaming_diff/streaming_diff_controller.dart';
+import 'ai/streaming_diff/streaming_diff_widget.dart';
 import '../../core/services/auto_save_service.dart';
 import '../../core/services/search_service.dart';
 import '../../core/services/markdown_shortcuts_service.dart';
 import '../../core/services/scroll_sync_service.dart';
 import '../../core/services/quicklook_service.dart';
 import 'find_dialog.dart';
+import 'ai/selection_detector.dart';
+import 'ai/ai_action.dart';
 
 class UndoIntent extends Intent {
   const UndoIntent();
@@ -103,6 +110,10 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
   // Track vertical scroll position to detect horizontal vs vertical scrolling
   double _lastVerticalScrollPosition = 0.0;
 
+  // Streaming diff overlay state
+  StreamingDiffController? _diffController;
+  bool _diffActive = false;
+
   @override
   void initState() {
     super.initState();
@@ -165,6 +176,7 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
     _scrollController.dispose();
     _codeController.dispose();
     _textController.dispose();
+    _diffController?.dispose();
     super.dispose();
   }
 
@@ -553,6 +565,25 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
     final preferencesAsync = ref.watch(preferencesProvider);
+    final aiIntent = ref.watch(aiIntentProvider);
+    final clientAsync = ref.watch(aiWorkerClientProvider);
+
+    // Start diff controller when a new intent arrives and client is ready.
+    if (aiIntent != null && clientAsync.hasValue && !_diffActive) {
+      _diffActive = true;
+      final client = clientAsync.value!;
+      final intent = aiIntent;
+      Future.microtask(() async {
+        if (!mounted) return;
+        _diffController?.dispose();
+        final ctrl = StreamingDiffController(client);
+        if (mounted) setState(() => _diffController = ctrl);
+        await ctrl.start(
+          selection: intent.selectedText,
+          op: intent.action.asRefineOp,
+        );
+      });
+    }
     
     // Update editor content when app state changes
     if (_codeController.text != appState.content) {
@@ -574,8 +605,35 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
     // Handle scroll requests
     _handleScrollRequest(appState.scrollToHeading, appState.scrollRequestId);
 
-    return preferencesAsync.when(
-      data: (preferences) => Column(
+    final diffOverlay = (aiIntent != null && _diffController != null)
+        ? Positioned(
+            right: 16,
+            top: 60,
+            width: 400,
+            child: StreamingDiffWidget(
+              controller: _diffController!,
+              onCommit: (committedText) {
+                atomicReplace(
+                  controller: _codeController,
+                  start: aiIntent.selectionStart,
+                  end: aiIntent.selectionEnd,
+                  replacement: committedText,
+                );
+                ref.read(aiIntentProvider.notifier).state = null;
+                setState(() { _diffActive = false; });
+              },
+              onCancel: () {
+                ref.read(aiIntentProvider.notifier).state = null;
+                setState(() { _diffActive = false; });
+              },
+            ),
+          )
+        : null;
+
+    return Stack(
+      children: [
+        preferencesAsync.when(
+          data: (preferences) => Column(
         children: [
           if (_showFindDialog)
             FindDialog(
@@ -754,19 +812,24 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
                         }
                         return false;
                       },
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onTapDown: (details) => _onEditorTap(details),
-                        child: CodeField(
-                          controller: _codeController,
-                          textStyle: TextStyle(
-                            fontFamily: preferences.fontFamily,
-                            fontSize: preferences.fontSize,
-                            height: 1.5,
+                      child: SelectionDetector(
+                        controller: _codeController,
+                        onAction: (AIIntent intent) =>
+                            ref.read(aiIntentProvider.notifier).state = intent,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTapDown: (details) => _onEditorTap(details),
+                          child: CodeField(
+                            controller: _codeController,
+                            textStyle: TextStyle(
+                              fontFamily: preferences.fontFamily,
+                              fontSize: preferences.fontSize,
+                              height: 1.5,
+                            ),
+                            decoration: const BoxDecoration(),
+                            padding: const EdgeInsets.all(16),
+                            expands: true,
                           ),
-                          decoration: const BoxDecoration(),
-                          padding: const EdgeInsets.all(16),
-                          expands: true,
                         ),
                       ),
                     ),
@@ -775,10 +838,13 @@ class _MarkdownEditorState extends ConsumerState<MarkdownEditor> {
           ),
         ],
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text('Error loading preferences: $error'),
-      ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+            child: Text('Error loading preferences: $error'),
+          ),
+        ),
+        if (diffOverlay != null) diffOverlay,
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import '../dialogs/context_strategy_settings_dialog.dart';
 import '../dialogs/ai_analytics_dialog.dart';
 import 'ollama_help_screen.dart';
 import '../../core/services/ollama_service.dart';
+import 'ai/settings/ai_worker_settings_page.dart';
 
 class PreferencesDialog extends ConsumerStatefulWidget {
   const PreferencesDialog({super.key});
@@ -894,6 +895,14 @@ The AI gets exactly the right amount of information for your question type, savi
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 16),
+
+                // AI Worker Settings
+                Text('AI Worker (Anthropic Sidecar)',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                const AIWorkerSettingsPage(),
               ],
             ),
           ),

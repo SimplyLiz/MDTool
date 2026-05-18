@@ -25,6 +25,7 @@ class StreamingDiffWidget extends StatefulWidget {
 
 class _StreamingDiffWidgetState extends State<StreamingDiffWidget> {
   int _cursorBlock = 0;
+  bool _committed = false;
   final FocusNode _focus = FocusNode();
 
   @override
@@ -47,6 +48,8 @@ class _StreamingDiffWidgetState extends State<StreamingDiffWidget> {
     final s = widget.controller.state;
     if (s != null && s.isFullyStreamed && s.blocks.every((b) =>
         b.status == BlockStatus.accepted || b.status == BlockStatus.rejected)) {
+      if (_committed) return;
+      _committed = true;
       widget.onCommit(s.committedText);
     }
   }
@@ -108,6 +111,7 @@ class _StreamingDiffWidgetState extends State<StreamingDiffWidget> {
     if (ev is! KeyDownEvent) return;
     final s = widget.controller.state;
     if (s == null) return;
+    if (s.blocks.isEmpty) return;
     if (ev.logicalKey == LogicalKeyboardKey.tab) {
       setState(() => _cursorBlock = (_cursorBlock + 1) % s.blocks.length);
     } else if (ev.logicalKey == LogicalKeyboardKey.enter) {

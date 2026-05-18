@@ -41,7 +41,13 @@ class StreamingDiffController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> cancel() async => await _handle?.cancel();
+  Future<void> cancel() async {
+    await _handle?.cancel();
+    await _sub?.cancel();
+    _sub = null;
+    _state = null;
+    notifyListeners();
+  }
   void accept(int blockIdx) { _state = _state?.accept(blockIdx: blockIdx); notifyListeners(); }
   void reject(int blockIdx) { _state = _state?.reject(blockIdx: blockIdx); notifyListeners(); }
 

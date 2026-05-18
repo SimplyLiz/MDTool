@@ -60,6 +60,11 @@ export function createRefineHandler(deps: RefineHandlerDeps) {
             });
           }
         }
+      } catch (err) {
+        deps.broadcast({
+          jsonrpc: '2.0', method: 'stream.error',
+          params: { opId, message: err instanceof Error ? err.message : String(err), recoverable: false },
+        });
       } finally {
         deps.registry.finish(opId);
       }

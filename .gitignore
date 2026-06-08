@@ -140,4 +140,7 @@ deploy/
 # MCP / CKB tooling
 .ckb/
 .mcp.json
-package-lock.json
+package-lock.json.memory/.initialized
+
+# Brainstorming companion (visual mockup server output)
+.superpowers/

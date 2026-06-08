@@ -16,24 +16,26 @@ export function createAnthropicProvider(cfg: AnthropicConfig): ProviderClient {
 
   async function* refineStream(req: RefineRequest): AsyncIterable<StreamEvent> {
     try {
-      const stream = (client as any).messages.stream({
-        model,
-        max_tokens: 2048,
-        system: [
-          {
-            type: 'text',
-            text: `${req.systemPrompt}\n\nPrompt version: ${PROMPT_VERSION}`,
-            cache_control: { type: 'ephemeral' },
-          },
-        ],
-        messages: [
-          {
-            role: 'user',
-            content: `Operation: ${req.instruction}\n\n---\n${req.userSelection}`,
-          },
-        ],
-        signal: req.abort,
-      });
+      const stream = (client as any).messages.stream(
+        {
+          model,
+          max_tokens: 2048,
+          system: [
+            {
+              type: 'text',
+              text: `${req.systemPrompt}\n\nPrompt version: ${PROMPT_VERSION}`,
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
+          messages: [
+            {
+              role: 'user',
+              content: `Operation: ${req.instruction}\n\n---\n${req.userSelection}`,
+            },
+          ],
+        },
+        { signal: req.abort },
+      );
 
       let usage = { input: 0, output: 0 };
       for await (const ev of stream as AsyncIterable<any>) {

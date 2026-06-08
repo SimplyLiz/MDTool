@@ -3,7 +3,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class AIWorkerSecrets {
   AIWorkerSecrets({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage(
-          mOptions: MacOsOptions(synchronizable: false),
+          mOptions: MacOsOptions(
+            synchronizable: false,
+            useDataProtectionKeyChain: false,
+          ),
           wOptions: WindowsOptions(),
         );
   final FlutterSecureStorage _storage;
